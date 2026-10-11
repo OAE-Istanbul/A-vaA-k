@@ -53,6 +53,16 @@ Gündüz denemek için `npm run demo` kullanın. Demo modunda saat 21:05'ten ba�
 
 Örnek otellerin hepsinin PIN'i `1234`. Oteller kurgusaldır, gerçek işletmelerle ilgisi yoktur. Canlı teklif akışını görmek için alıcıyı bir tarayıcıda, otelleri başka sekmelerde ya da gizli pencerede açın.
 
+## Tasarım
+
+Görsel dil Ağva'nın kendisinden geliyor: Göksu ile Yeşilçay'ın birleştiği iki dere (logo), dere taşı biçiminde yuvarlak kutular, Pembe Kayalar'dan alınan pembe ve gece fenerinin sıcak sarısı.
+
+- Üstteki gökyüzü pazarın durumunu gösterir: açıkken gece, ay 21.00'den 02.00'ye gökte ilerler ve derede yakamoz bırakır; kapalıyken gündüz. Orman sırtı kodla üretilir, yuvarlak taçlı kayın ve meşe biçimindedir.
+- Teklif süresini dereyi geçen bir sandal gösterir. Yeni teklif gelince kart dereden süzülür, fiyatın etrafında halkalar yayılır, en iyi fiyat eski değerden yenisine akarak iner. Hareketi azalt ayarı açık olanlarda animasyon yoktur.
+- Yazı tipleri: başlık ve fiyatlarda Young Serif, metinde Ysabeau Infant. İkisi de projede barındırılır (`public/fonts`, SIL Open Font License) ve Türkçe karakterlerin tamamını içerir.
+- İkonlar hazır bir kütüphaneden değil, `public/icons.js` içinde elle çizildi (kahvaltı için ince belli çay bardağı gibi).
+- Açık tema "Yeşilçay sabahı", koyu tema "Göksu gecesi"; cihazın ayarına göre seçilir.
+
 ## Ayarlar
 
 | Ortam değişkeni | Varsayılan | Açıklama |

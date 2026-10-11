@@ -1,4 +1,5 @@
 const timeFormat = new Intl.DateTimeFormat('tr-TR', { timeZone: 'Europe/Istanbul', hour: '2-digit', minute: '2-digit' });
+const clock = (ms) => timeFormat.format(ms).replace(':', '.');
 
 /** Önizlemenin üstündeki kontrol çubuğu: kimin gözünden bakıldığı, saat ve botlar. */
 export function mountPanel(preview) {
@@ -20,7 +21,7 @@ export function mountPanel(preview) {
       <label class="preview-check"><input type="checkbox" id="preview-bots" checked> Rakip oteller teklif versin</label>
       <button type="button" id="preview-reset">Baştan başla</button>
     </div>
-    <p class="preview-hint">Satış ekranları gerçek uygulamanın aynısı. Veriler yalnızca bu sekmede tutulur; otel PIN'i 1234.</p>`;
+    <p class="preview-hint">Ekranlar gerçek uygulamanın aynısı. Rakip oteller kendiliğinden teklif verir; saati ileri alarak süre sonunu görebilirsiniz. Veriler yalnızca bu sekmede tutulur, otel PIN'i 1234.</p>`;
   document.body.prepend(panel);
 
   const view = panel.querySelector('#preview-view');
@@ -28,7 +29,7 @@ export function mountPanel(preview) {
     window.dispatchEvent(new CustomEvent('agva:session', { detail: preview.sessionFor(value) }));
   };
   const showTime = () => {
-    panel.querySelector('#preview-time').textContent = timeFormat.format(preview.now());
+    panel.querySelector('#preview-time').textContent = clock(preview.now());
   };
 
   view.addEventListener('change', () => switchTo(view.value));

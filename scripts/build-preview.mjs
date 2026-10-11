@@ -22,7 +22,11 @@ const script = outputFiles[0].text.replaceAll('</script', '<\\/script');
 const indexHtml = read('public/index.html');
 const body = indexHtml.slice(indexHtml.indexOf('<body>') + '<body>'.length, indexHtml.indexOf('</body>')).trim();
 const title = /<title>(.*?)<\/title>/.exec(indexHtml)[1];
-const css = `${read('public/style.css')}\n${read('preview/preview.css')}`;
+// Fontlar data URI olarak gömülür; önizleme tek dosyadır.
+const css = `${read('public/style.css')}\n${read('preview/preview.css')}`.replace(
+  /url\((fonts\/[\w.-]+\.woff2)\)/g,
+  (_, path) => `url(data:font/woff2;base64,${readFileSync(new URL(`public/${path}`, root)).toString('base64')})`,
+);
 
 const content = `<title>${title}</title>
 <style>

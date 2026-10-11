@@ -15,6 +15,8 @@ const MIME_TYPES = {
   '.png': 'image/png',
   '.ico': 'image/x-icon',
   '.json': 'application/json; charset=utf-8',
+  '.woff2': 'font/woff2',
+  '.txt': 'text/plain; charset=utf-8',
 };
 
 const SECURITY_HEADERS = {

@@ -1,31 +1,49 @@
-/* Önizleme kontrol çubuğu. Uygulamanın renk değişkenlerini kullanır. */
+/* Önizleme kontrol çubuğu: uygulamanın değişkenlerini kullanır, ondan ayrı dursun diye kesikli dalga ile biter. */
 .preview-panel {
-  background: var(--surface-2);
-  border-bottom: 1px dashed var(--accent);
-  padding-block: 10px;
-  font-size: 0.9rem;
+  position: relative;
+  background: var(--yuzey-2);
+  padding-block: 10px 14px;
+  font-size: 0.95rem;
+}
+.preview-panel::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 8px;
+  background: var(--fener-isik);
+  -webkit-mask: var(--dalga-yatay) repeat-x 0 0 / 32px 8px;
+  mask: var(--dalga-yatay) repeat-x 0 0 / 32px 8px;
 }
 .preview-inner {
-  max-width: 960px;
+  max-width: 1040px;
   margin: 0 auto;
   padding: 0 16px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px 14px;
+  gap: 10px 16px;
 }
 .preview-label {
-  font-weight: 700;
-  font-size: 0.75rem;
-  letter-spacing: 0.08em;
+  font: 700 0.75rem/1 var(--font-govde);
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--fener);
 }
-.preview-field { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--muted); }
-.preview-field select { width: auto; max-width: 100%; padding: 6px 10px; }
-.preview-clock { color: var(--muted); }
-.preview-clock strong { color: var(--text); font-variant-numeric: tabular-nums; }
-.preview-panel button { padding: 6px 12px; font-size: 0.9rem; }
-.preview-check { display: flex; align-items: center; gap: 6px; margin: 0; color: var(--text); }
-.preview-check input { width: auto; }
-.preview-hint { max-width: 960px; margin: 6px auto 0; padding: 0 16px; color: var(--muted); font-size: 0.8rem; }
+.preview-field { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--soluk); }
+.preview-field select { width: auto; max-width: 100%; padding: 7px 12px; background: var(--yuzey); }
+.preview-clock { color: var(--soluk); }
+.preview-clock strong { color: var(--murekkep); font-variant-numeric: lining-nums tabular-nums; }
+.preview-panel button {
+  font: 700 0.92rem var(--font-govde);
+  padding: 7px 13px;
+  border: 0;
+  border-radius: var(--tas-kucuk);
+  background: var(--yuzey);
+  color: var(--murekkep);
+  cursor: pointer;
+}
+.preview-check { display: flex; align-items: center; gap: 6px; margin: 0; }
+.preview-check input { width: auto; accent-color: var(--gok); }
+.preview-hint { max-width: 1040px; margin: 6px auto 0; padding: 0 16px; color: var(--soluk); font-size: 0.85rem; }
