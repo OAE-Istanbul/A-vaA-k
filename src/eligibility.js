@@ -2,12 +2,18 @@ import { AMENITIES, GUEST_GROUPS, HOTEL_TYPES } from './catalog.js';
 
 export const guestCount = (listing) => listing.adults + listing.children;
 
+// Eski kayıtlarda oda sayısı ve oda adedi yoksa 1 kabul edilir.
+export const roomCount = (listing) => listing.roomCount ?? 1;
+
+/** Alıcının istediği sayıda odası olan ve tüm misafirleri sığdıran oda tipleri. */
 export const suitableRooms = (hotel, listing) =>
-  hotel.rooms.filter((room) => room.capacity >= guestCount(listing));
+  hotel.rooms.filter(
+    (room) => (room.count ?? 1) >= roomCount(listing) && room.capacity * roomCount(listing) >= guestCount(listing),
+  );
 
 /**
  * Bir otel ilana teklif verebilir mi? Alıcının otel tipi ve olanak tercihleri,
- * otelin kabul ettiği misafir profilleri ve oda kapasitesi birlikte sağlanmalı.
+ * otelin kabul ettiği misafir profilleri, oda sayısı ve kapasitesi birlikte sağlanmalı.
  */
 export function checkEligibility(hotel, listing) {
   const reasons = [];
@@ -22,7 +28,12 @@ export function checkEligibility(hotel, listing) {
     reasons.push(`${GUEST_GROUPS[listing.group]} profilini kabul etmiyorsunuz.`);
   }
   if (suitableRooms(hotel, listing).length === 0) {
-    reasons.push(`${guestCount(listing)} kişilik odanız yok.`);
+    const rooms = roomCount(listing);
+    reasons.push(
+      rooms > 1
+        ? `${guestCount(listing)} kişiyi ${rooms} odada ağırlayacak oda tipiniz yok.`
+        : `${guestCount(listing)} kişilik odanız yok.`,
+    );
   }
   return { eligible: reasons.length === 0, reasons };
 }

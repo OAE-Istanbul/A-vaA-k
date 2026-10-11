@@ -46,27 +46,37 @@ function clockTime(value, label) {
   return value;
 }
 
+const COUPLE_RULE = {
+  adults: [2, 2],
+  children: [0, 0],
+  singleRoom: true,
+  message: 'Çift seçeneğinde 2 yetişkin olur. Çocukla geliyorsanız "Aile" seçin.',
+};
+
 const GROUP_RULES = {
-  evli_cift: { adults: [2, 2], children: [0, 0], message: 'Çift seçeneğinde 2 yetişkin olur. Çocukla geliyorsanız "Aile" seçin.' },
-  cift: { adults: [2, 2], children: [0, 0], message: 'Çift seçeneğinde 2 yetişkin olur. Çocukla geliyorsanız "Aile" seçin.' },
-  tek: { adults: [1, 1], children: [0, 0], message: 'Tek kişi seçeneğinde 1 yetişkin olur.' },
+  evli_cift: COUPLE_RULE,
+  cift: COUPLE_RULE,
+  tek: { adults: [1, 1], children: [0, 0], singleRoom: true, message: 'Tek kişi seçeneğinde 1 yetişkin olur.' },
   aile: { adults: [1, 8], children: [0, 6], minTotal: 2, message: 'Aile en az 2 kişi olmalı.' },
   arkadas: { adults: [2, 8], children: [0, 6], message: 'Arkadaş grubunda en az 2 yetişkin olmalı.' },
 };
 
-function checkGroup(group, adults, children) {
+function checkGroup(group, adults, children, roomCount) {
   const rule = GROUP_RULES[group];
   const inRange = (n, [min, max]) => n >= min && n <= max;
   if (!inRange(adults, rule.adults) || !inRange(children, rule.children) || adults + children < (rule.minTotal ?? 0)) {
     throw new MarketError(rule.message);
   }
+  if (rule.singleRoom && roomCount > 1) throw new MarketError('Çift ve tek kişi ilanları tek oda içindir.');
+  if (roomCount > adults) throw new MarketError('Her odada en az bir yetişkin kalmalı.');
 }
 
 export function validateListingInput(input, config) {
   const group = oneOf(input.group, GUEST_GROUPS, 'misafir profili');
   const adults = integer(input.adults, 'Yetişkin sayısı', 1, 8);
   const children = integer(input.children ?? 0, 'Çocuk sayısı', 0, 6);
-  checkGroup(group, adults, children);
+  const roomCount = integer(input.roomCount ?? 1, 'Oda sayısı', 1, config.maxRooms);
+  checkGroup(group, adults, children, roomCount);
 
   const durationMinutes = integer(input.durationMinutes, 'İhale süresi', 1, 24 * 60);
   if (!config.auctionDurations.includes(durationMinutes)) {
@@ -78,6 +88,7 @@ export function validateListingInput(input, config) {
     group,
     adults,
     children,
+    roomCount,
     nights: integer(input.nights ?? 1, 'Gece sayısı', 1, config.maxNights),
     arrivalTime: clockTime(input.arrivalTime, 'Varış saati'),
     hotelTypes: subsetOf(input.hotelTypes, HOTEL_TYPES, 'otel tipi'),

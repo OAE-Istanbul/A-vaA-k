@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { MarketError } from '../src/errors.js';
-import { istanbul, listingInput, MINUTE, setup } from './helpers.js';
+import { hotel, istanbul, listingInput, MINUTE, setup } from './helpers.js';
 
 const rejects = (fn, pattern) => assert.throws(fn, (err) => err instanceof MarketError && pattern.test(err.message));
 
@@ -19,14 +19,20 @@ test('ilan bu gecenin tarihiyle ve ihale süresiyle açılır', () => {
   assert.equal(listing.biddingEndsAt, start + 30 * MINUTE);
 });
 
-test('ihale süresi pazar kapanışını aşamaz', () => {
-  const { market } = setup({ start: istanbul(2026, 10, 11, 23, 45) });
+test('pazar gece yarısından sonra da açık, ilan o gecenin tarihini alır', () => {
+  const { market } = setup({ start: istanbul(2026, 10, 12, 0, 40) });
+  const listing = market.createListing('u1', listingInput());
+  assert.equal(listing.checkIn, '2026-10-11');
+});
+
+test('ihale süresi pazar kapanışını (02:00) aşamaz', () => {
+  const { market } = setup({ start: istanbul(2026, 10, 12, 1, 45) });
   const listing = market.createListing('u1', listingInput({ durationMinutes: 60 }));
-  assert.equal(listing.biddingEndsAt, istanbul(2026, 10, 12, 0, 0));
+  assert.equal(listing.biddingEndsAt, istanbul(2026, 10, 12, 2, 0));
 });
 
 test('kapanışa 5 dakikadan az kala ilan açılamaz', () => {
-  const { market } = setup({ start: istanbul(2026, 10, 11, 23, 57) });
+  const { market } = setup({ start: istanbul(2026, 10, 12, 1, 57) });
   rejects(() => market.createListing('u1', listingInput()), /kapanmak üzere/);
 });
 
@@ -41,6 +47,23 @@ test('profil ve kişi sayısı tutarlı olmalı', () => {
   const { market } = setup();
   rejects(() => market.createListing('u1', listingInput({ group: 'evli_cift', adults: 2, children: 1 })), /Aile/);
   rejects(() => market.createListing('u1', listingInput({ durationMinutes: 20 })), /İhale süresi/);
+  rejects(() => market.createListing('u1', listingInput({ roomCount: 2 })), /tek oda/);
+  rejects(() => market.createListing('u1', listingInput({ group: 'aile', adults: 1, children: 2, roomCount: 2 })), /yetişkin/);
+});
+
+test('çok odalı ilan: oda tipinin adedi ve toplam kapasitesi yetmeli', () => {
+  const { market } = setup();
+  // 6 arkadaş, 3 oda: 3 adet 2 kişilik oda yeter, tek aile odası yetmez.
+  const { id } = market.createListing('u1', listingInput({ group: 'arkadas', adults: 6, roomCount: 3 }));
+  const [view] = market.hotelFeed('c').live;
+  assert.equal(view.roomCount, 3);
+  assert.deepEqual(view.rooms, ['Çift oda']);
+  rejects(() => market.placeOffer('c', id, { price: 5000, roomName: 'Aile odası' }), /oda tipi/);
+  assert.doesNotThrow(() => market.placeOffer('c', id, { price: 5000, roomName: 'Çift oda' }));
+
+  // 4 oda istenirse 3 adet çift odası yetmez.
+  const other = market.createListing('u2', listingInput({ group: 'arkadas', adults: 4, roomCount: 4 }));
+  assert.equal(market.hotelFeed('c').live.some((l) => l.id === other.id), false);
 });
 
 test('ters açık artırma: her teklif en düşüğün en az 50 TL altında olmalı', () => {
@@ -118,14 +141,48 @@ test('süre bitince teklif alınmaz, alıcı kabul süresi içinde seçer', () =
   assert.equal(market.hotelFeed('b').won.length, 0);
 });
 
-test('kabul süresi geçen ilan sona erer', () => {
+test('alıcı seçim süresinde seçmezse en iyi fiyat otomatik kabul edilir', () => {
   const { market, clock } = setup();
+  const events = [];
+  market.subscribe((e) => events.push(e.type));
   const { id, biddingEndsAt } = market.createListing('u1', listingInput());
   market.placeOffer('a', id, { price: 2000, roomName: 'Çift oda' });
+  market.placeOffer('b', id, { price: 1900, roomName: 'Çift oda' });
+
   clock.set(biddingEndsAt + 16 * MINUTE);
+  assert.deepEqual(market.settle(), [id]);
+  assert.equal(events.at(-1), 'auto_accepted');
+
   const [view] = market.buyerListings('u1');
-  assert.equal(view.status, 'expired');
-  rejects(() => market.acceptOffer('u1', id, view.offers[0].id), /kabul edilemez/);
+  assert.equal(view.status, 'accepted');
+  assert.equal(view.autoAccepted, true);
+  assert.equal(view.acceptedOffer.hotel.id, 'b');
+  assert.equal(market.hotelFeed('b').won[0].autoAccepted, true);
+  rejects(() => market.acceptOffer('u1', id, view.offers[1].id), /kabul edilemez/);
+});
+
+test('öne çıkanlar: en iyi fiyat, en çok olanak, fiyat/performans; alıcı yalnızca bunlardan seçer', () => {
+  const base = { acceptedGroups: ['evli_cift'] };
+  const { market } = setup({
+    hotels: [
+      hotel({ ...base, id: 'x', name: 'X', amenities: ['kahvalti', 'jakuzi', 'somine', 'havuz', 'wifi', 'otopark'] }),
+      hotel({ ...base, id: 'y', name: 'Y', amenities: ['kahvalti', 'wifi'] }),
+      hotel({ ...base, id: 'z', name: 'Z', amenities: ['kahvalti', 'wifi', 'klima'] }),
+    ],
+  });
+  const { id } = market.createListing('u1', listingInput());
+  market.placeOffer('x', id, { price: 3000, roomName: 'Çift oda' });
+  market.placeOffer('y', id, { price: 2900, roomName: 'Çift oda' });
+  market.placeOffer('z', id, { price: 2800, roomName: 'Çift oda' });
+
+  const [view] = market.buyerListings('u1');
+  const best = Object.fromEntries(view.offers.map((o) => [o.hotel.id, o.best]));
+  assert.deepEqual(best, { z: ['price'], y: [], x: ['amenities', 'value'] });
+  assert.deepEqual(market.hotelFeed('x').live[0].myBest, ['amenities', 'value']);
+
+  const offerOf = (hotelId) => view.offers.find((o) => o.hotel.id === hotelId).id;
+  rejects(() => market.acceptOffer('u1', id, offerOf('y')), /öne çıkan/);
+  assert.equal(market.acceptOffer('u1', id, offerOf('x')).acceptedOffer.hotel.id, 'x');
 });
 
 test('teklifsiz ilan süre bitince sona erer ve yenisi açılabilir', () => {

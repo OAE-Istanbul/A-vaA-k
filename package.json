@@ -10,6 +10,10 @@
   "scripts": {
     "start": "node src/index.js",
     "demo": "node src/index.js --demo",
-    "test": "node --test"
+    "test": "node --test",
+    "preview": "node scripts/build-preview.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.0"
   }
 }

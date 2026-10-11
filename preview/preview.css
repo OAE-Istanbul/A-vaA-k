@@ -1,0 +1,31 @@
+/* Önizleme kontrol çubuğu. Uygulamanın renk değişkenlerini kullanır. */
+.preview-panel {
+  background: var(--surface-2);
+  border-bottom: 1px dashed var(--accent);
+  padding-block: 10px;
+  font-size: 0.9rem;
+}
+.preview-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+.preview-label {
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.preview-field { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--muted); }
+.preview-field select { width: auto; max-width: 100%; padding: 6px 10px; }
+.preview-clock { color: var(--muted); }
+.preview-clock strong { color: var(--text); font-variant-numeric: tabular-nums; }
+.preview-panel button { padding: 6px 12px; font-size: 0.9rem; }
+.preview-check { display: flex; align-items: center; gap: 6px; margin: 0; color: var(--text); }
+.preview-check input { width: auto; }
+.preview-hint { max-width: 960px; margin: 6px auto 0; padding: 0 16px; color: var(--muted); font-size: 0.8rem; }

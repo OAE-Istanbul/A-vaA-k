@@ -1,26 +1,16 @@
-import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import { MarketError } from './errors.js';
 import { newId, newToken } from './ids.js';
 import { normalizePhone, text } from './validation.js';
 
-export function hashPin(pin) {
-  const salt = randomBytes(16);
-  return `${salt.toString('hex')}:${scryptSync(String(pin), salt, 32).toString('hex')}`;
-}
-
-export function verifyPin(pin, stored) {
-  const [salt, hash] = stored.split(':');
-  const actual = scryptSync(String(pin), Buffer.from(salt, 'hex'), 32);
-  return timingSafeEqual(actual, Buffer.from(hash, 'hex'));
-}
-
 /**
  * Demo amaçlı oturum yönetimi. Alıcı ad + telefonla girer (SMS doğrulaması yok),
  * otel PIN ile girer. Canlıya çıkmadan önce gerçek kimlik doğrulama gerekir.
+ * verifyPin dışarıdan verilir; sunucu scrypt (pin.js), önizleme düz karşılaştırma kullanır.
  */
 export class Auth {
-  constructor(store) {
+  constructor(store, { verifyPin }) {
     this.store = store;
+    this.verifyPin = verifyPin;
   }
 
   get #db() {
@@ -47,7 +37,7 @@ export class Auth {
 
   #loginHotel(input) {
     const hotel = typeof input.hotelId === 'string' ? this.#db.hotels[input.hotelId] : undefined;
-    if (!hotel || !verifyPin(input.pin ?? '', hotel.pinHash)) {
+    if (!hotel || !this.verifyPin(input.pin ?? '', hotel.pinHash)) {
       throw new MarketError('Otel ya da PIN hatalı.', 401);
     }
     return this.#startSession('hotel', hotel.id);

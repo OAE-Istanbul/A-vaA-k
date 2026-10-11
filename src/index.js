@@ -3,6 +3,7 @@ import { Auth } from './auth.js';
 import { systemClock } from './clock.js';
 import { defaultConfig } from './config.js';
 import { Marketplace } from './market.js';
+import { verifyPin } from './pin.js';
 import { DEMO_PIN, seedHotels } from './seed.js';
 import { createServer } from './server.js';
 import { Store } from './store.js';
@@ -17,7 +18,9 @@ const store = new Store(config.dataFile);
 seedHotels(store);
 
 const market = new Marketplace({ store, clock: systemClock(config.demoTime), config });
-const auth = new Auth(store);
+const auth = new Auth(store, { verifyPin });
+// Seçim süresi dolan ilanlarda otomatik kabul, kimse sayfayı yenilemese de işlesin.
+setInterval(() => market.settle(), 15_000).unref();
 const publicDir = fileURLToPath(new URL('../public', import.meta.url));
 const server = createServer({ market, auth, config, publicDir });
 

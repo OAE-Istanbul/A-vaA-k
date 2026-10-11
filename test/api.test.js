@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { Auth } from '../src/auth.js';
+import { verifyPin } from '../src/pin.js';
 import { DEMO_PIN, seedHotels } from '../src/seed.js';
 import { createServer } from '../src/server.js';
 import { istanbul, setup, testConfig } from './helpers.js';
@@ -15,7 +16,7 @@ before(async () => {
   seedHotels(ctx.store);
   clock = ctx.clock;
   const publicDir = fileURLToPath(new URL('../public', import.meta.url));
-  server = createServer({ market: ctx.market, auth: new Auth(ctx.store), config: testConfig, publicDir });
+  server = createServer({ market: ctx.market, auth: new Auth(ctx.store, { verifyPin }), config: testConfig, publicDir });
   await new Promise((resolve) => server.listen(0, resolve));
   base = `http://127.0.0.1:${server.address().port}`;
 });

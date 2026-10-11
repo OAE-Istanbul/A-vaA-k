@@ -29,3 +29,10 @@ export const GUEST_GROUPS = Object.freeze({
   arkadas: 'Arkadaş grubu',
   tek: 'Tek kişi',
 });
+
+// Süre sonunda alıcıya sunulan "en iyiler". Alıcı bunlardan birini seçer.
+export const BEST_CATEGORIES = Object.freeze({
+  price: 'En iyi fiyat',
+  amenities: 'En çok olanak',
+  value: 'Fiyat/performans',
+});

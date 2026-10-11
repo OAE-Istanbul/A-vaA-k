@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { createServer as createHttpServer } from 'node:http';
 import { extname, resolve, sep } from 'node:path';
-import { AMENITIES, GUEST_GROUPS, HOTEL_TYPES } from './catalog.js';
+import { createApi } from './api.js';
 import { MarketError } from './errors.js';
 
 const MAX_BODY_BYTES = 64 * 1024;
@@ -23,11 +23,6 @@ const SECURITY_HEADERS = {
   'Content-Security-Policy':
     "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'",
 };
-
-function route(method, pattern, handler, role = null) {
-  const regex = new RegExp(`^${pattern.replace(/:(\w+)/g, '(?<$1>[^/]+)')}$`);
-  return { method, regex, handler, role };
-}
 
 function sendJson(res, status, payload) {
   res.writeHead(status, { ...SECURITY_HEADERS, 'Content-Type': MIME_TYPES['.json'], 'Cache-Control': 'no-store' });
@@ -63,57 +58,11 @@ export function createServer({ market, auth, config, publicDir }) {
     for (const res of streams) res.write(message);
   });
 
-  const meta = {
-    appName: config.appName,
-    catalog: { hotelTypes: HOTEL_TYPES, amenities: AMENITIES, guestGroups: GUEST_GROUPS },
-    rules: {
-      marketOpens: config.marketOpens,
-      marketCloses: config.marketCloses,
-      minDecrementTL: config.minDecrementTL,
-      auctionDurations: config.auctionDurations,
-      acceptGraceMinutes: config.acceptGraceMinutes,
-      softCloseMinutes: config.softCloseMinutes,
-      maxNights: config.maxNights,
-    },
-  };
-
-  const routes = [
-    route('GET', '/api/meta', () => meta),
-    route('GET', '/api/market', () => market.marketStatus()),
-    route('GET', '/api/hotels', () => market.hotelDirectory()),
-    route('POST', '/api/session', ({ body }) => auth.login(body)),
-    route('DELETE', '/api/session', ({ token }) => {
-      auth.logout(token);
-      return { ok: true };
-    }),
-    route('GET', '/api/me', ({ user }) => auth.profile(user), 'any'),
-    route('GET', '/api/listings/mine', ({ user }) => market.buyerListings(user.id), 'buyer'),
-    route('POST', '/api/listings', ({ user, body }) => market.createListing(user.id, body), 'buyer'),
-    route('POST', '/api/listings/:id/cancel', ({ user, params }) => market.cancelListing(user.id, params.id), 'buyer'),
-    route('POST', '/api/listings/:id/accept', ({ user, params, body }) => market.acceptOffer(user.id, params.id, body.offerId), 'buyer'),
-    route('POST', '/api/listings/:id/offers', ({ user, params, body }) => market.placeOffer(user.id, params.id, body), 'hotel'),
-    route('GET', '/api/hotel/feed', ({ user }) => market.hotelFeed(user.id), 'hotel'),
-  ];
+  const api = createApi({ market, auth, config });
 
   async function handleApi(req, res, url) {
-    let match = null;
-    for (const r of routes) {
-      const m = r.method === req.method && r.regex.exec(url.pathname);
-      if (m) {
-        match = { ...r, params: m.groups ?? {} };
-        break;
-      }
-    }
-    if (!match) throw new MarketError('Bulunamadı.', 404);
-
-    const token = bearerToken(req);
-    const user = auth.resolve(token);
-    if (match.role) {
-      if (!user) throw new MarketError('Giriş yapmanız gerekiyor.', 401);
-      if (match.role !== 'any' && user.role !== match.role) throw new MarketError('Bu işlem için yetkiniz yok.', 403);
-    }
     const body = req.method === 'POST' ? await readJson(req) : {};
-    sendJson(res, 200, await match.handler({ user, token, body, params: match.params }));
+    sendJson(res, 200, await api.handle({ method: req.method, path: url.pathname, token: bearerToken(req), body }));
   }
 
   // EventSource başlık gönderemediği için token sorgu parametresiyle gelir.

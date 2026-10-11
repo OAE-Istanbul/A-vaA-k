@@ -144,8 +144,8 @@ button:disabled { opacity: 0.6; cursor: wait; }
 
 .offers { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 10px; }
 .offer {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
   padding: 14px;
   border: 1px solid var(--border);
@@ -156,6 +156,19 @@ button:disabled { opacity: 0.6; cursor: wait; }
 .offer-main { min-width: 0; }
 .offer-title { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-bottom: 2px; }
 .offer-side { display: flex; flex-direction: column; align-items: flex-end; justify-content: space-between; gap: 8px; }
+.offer .confirm { grid-column: 1 / -1; }
+h3.sub { margin-top: 16px; color: var(--muted); }
+
+.confirm {
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px;
+  margin-top: 12px;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+.confirm-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .price { font-size: 1.35rem; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0; }
@@ -180,7 +193,7 @@ button:disabled { opacity: 0.6; cursor: wait; }
 .toast {
   position: fixed;
   left: 50%;
-  bottom: 20px;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%);
   max-width: min(92vw, 520px);
   background: var(--surface-2);
@@ -196,7 +209,7 @@ button:disabled { opacity: 0.6; cursor: wait; }
 
 @media (max-width: 520px) {
   .card { padding: 16px; }
-  .offer { flex-direction: column; }
+  .offer { grid-template-columns: minmax(0, 1fr); }
   .offer-side { flex-direction: row; align-items: center; }
   .offer-form { grid-template-columns: 1fr; }
   .brand-sub { display: none; }
