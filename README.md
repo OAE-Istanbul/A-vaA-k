@@ -29,10 +29,16 @@ Pazar her akşam 21:00'de açılır. Amaç, otellerin o gece boş kalacak odalar
   - En çok olanak: en fazla olanağı sunan otelin teklifi.
   - Fiyat/performans: lira başına en çok olanak.
   Aynı teklif birden fazla kategoride öne çıkabilir; diğer teklifler listede görünür ama seçilemez.
-- Alıcı teklif süresi içinde ya da süre bittikten sonraki 15 dakika içinde öne çıkanlardan birini kabul eder.
-- 15 dakika içinde seçim yapmazsa en iyi fiyat otomatik kabul edilir. Hiç teklif yoksa ilan sona erer.
+- Alıcı teklif süresi içinde ya da süre bittikten sonraki 5 dakika içinde öne çıkanlardan birini kabul eder.
+- 5 dakika içinde seçim yapmazsa en iyi fiyat otomatik kabul edilir. Hiç teklif yoksa ilan sona erer.
 - Kabulden sonra alıcı otelin telefon ve adresini, otel alıcının adını ve telefonunu görür.
 - Fiyatta geçilen otel, başka bir kategoride öne çıkıyorsa bunu panelinde görür (alıcı onu yine seçebilir).
+
+**Oda stoku**
+- Otelin her oda tipinden kaç adet olduğu bilinir. Kabul edilen her anlaşma o gecelerde (çok gecelik kalışta her gece) ilgili odayı doldurur.
+- Aynı oda iki ilanı kazanamaz: ilk kabul edilen teklif odayı alır. Otelin aynı oda tipindeki, artık karşılanamayan diğer teklifleri o anda geri çekilir; alıcı "oda başka misafire gitti" notunu görür ve öne çıkanlar yeniden hesaplanır.
+- Otomatik kabulde önce açılan ilan önce işlenir; aynı odaya iki ilan talipse ilk ilanı açan odayı alır.
+- Boş odası kalmayan otel o ilanı görmez ve teklif veremez. Otel panelinde bu gece hangi odalarının boş kaldığı kapı simgeleriyle görünür.
 
 İlan durumları: `open` (teklif alıyor), `awaiting_choice` (alıcı seçiyor), `accepted`, `cancelled`, `expired`.
 
@@ -55,13 +61,21 @@ Gündüz denemek için `npm run demo` kullanın. Demo modunda saat 21:05'ten ba�
 
 ## Tasarım
 
-Görsel dil Ağva'nın kendisinden geliyor: Göksu ile Yeşilçay'ın birleştiği iki dere (logo), dere taşı biçiminde yuvarlak kutular, Pembe Kayalar'dan alınan pembe ve gece fenerinin sıcak sarısı.
+Ana palet beyaz ve yeşil; kontrast için koyu yeşil. Görsel dil Ağva'nın kendisinden geliyor.
 
-- Üstteki gökyüzü pazarın durumunu gösterir: açıkken gece, ay 21.00'den 02.00'ye gökte ilerler ve derede yakamoz bırakır; kapalıyken gündüz. Orman sırtı kodla üretilir, yuvarlak taçlı kayın ve meşe biçimindedir.
-- Teklif süresini dereyi geçen bir sandal gösterir. Yeni teklif gelince kart dereden süzülür, fiyatın etrafında halkalar yayılır, en iyi fiyat eski değerden yenisine akarak iner. Hareketi azalt ayarı açık olanlarda animasyon yoktur.
-- Yazı tipleri: başlık ve fiyatlarda Young Serif, metinde Ysabeau Infant. İkisi de projede barındırılır (`public/fonts`, SIL Open Font License) ve Türkçe karakterlerin tamamını içerir.
-- İkonlar hazır bir kütüphaneden değil, `public/icons.js` içinde elle çizildi (kahvaltı için ince belli çay bardağı gibi).
-- Açık tema "Yeşilçay sabahı", koyu tema "Göksu gecesi"; cihazın ayarına göre seçilir.
+- **Menü:** Koyu yeşil kapsül, sayfa kayarken üstte kalır. Pazarın açık olup olmadığını ve kalan süreyi her an gösterir.
+- **Gökyüzü:** Pazar açıkken gece; ay 21.00'den 02.00'ye ilerler, derede yakamoz vardır. Kapalıyken gündüz ve güneş.
+- **Dere:** Göksu sayfanın ortasından kıvrılarak akar. Su dokusu sürekli akar, sayfa kaydırıldıkça hızlanır, üstünde yapraklar sürüklenir. Geniş ekranda içerik iki kıyıya oturur (solda ilan ya da otel, sağda teklifler); dar ekranda dere kartların arkasından geçer.
+- **Kişiler ve odalar:** Kelime yerine figürlerle gösterilir. Yetişkin için piyon, çocuk için daha küçük figür; her oda ayrı bir taş, gece ay simgesiyle, varış saat simgesiyle.
+- **Hareketler:**
+  - Her düğmede, basılan yerden suya taş düşmüş gibi halka yayılır ve düğme yaylanır.
+  - İlan gönderilince kağıt gemi kalkıp dereye iner ve akıp gider.
+  - Otel teklif verince fiyat uçup "en düşük" kutusuna girer ("sepete ekle" hareketi).
+  - Anlaşmada yapraklar saçılır, onay işareti çizilir.
+  - Yeni teklif dereden süzülür; fiyatın etrafında halkalar yayılır.
+  - Hareketi azalt ayarı açık olanlarda bu hareketlerin hiçbiri oynamaz.
+- **Yazı tipleri:** Başlık, fiyat ve düğmelerde geniş ve kalın Anybody (değişken genişlik), metinde Ysabeau Infant. İkisi de projede barındırılır (`public/fonts`, SIL Open Font License) ve Türkçe karakterlerin tamamını içerir.
+- **İkonlar:** `public/icons.js` içinde elle çizildi; hazır kütüphane yok.
 
 ## Ayarlar
 
@@ -72,7 +86,7 @@ Görsel dil Ağva'nın kendisinden geliyor: Göksu ile Yeşilçay'ın birleşti�
 | `KAPANIS_SAATI` | 02:00 | Kapanış saati; açılıştan küçükse ertesi gün demektir |
 | `MIN_DUSUS_TL` | 50 | Yeni teklifin en düşük tekliften en az ne kadar düşük olacağı |
 | `UZATMA_DK` | 2 | Son dakika teklifinde süre uzatması |
-| `KABUL_SURESI_DK` | 15 | Süre bitince alıcının seçim süresi; sonra en iyi fiyat otomatik kabul edilir |
+| `KABUL_SURESI_DK` | 5 | Süre bitince alıcının seçim süresi; sonra en iyi fiyat otomatik kabul edilir |
 | `MAKS_GECE` | 3 | Bir ilanda en fazla gece sayısı |
 | `MAKS_ODA` | 4 | Bir ilanda en fazla oda sayısı |
 | `VERI_DOSYASI` | data/db.json | Kayıt dosyası; boş bırakılırsa yalnızca bellek |
@@ -123,7 +137,7 @@ test/             node:test ile testler
 1. Pazar 02:00'de kapanıyor. Daha geç ya da daha erken mi olmalı?
 2. Üçüncü öne çıkan kategori şimdilik "Fiyat/performans" (lira başına olanak sayısı). Yerine ya da yanına puan, denize yakınlık gibi başka bir "en iyi" eklenebilir; otellerden bu veri toplanmalı.
 3. Çok odalı ilanlarda tüm odalar aynı tipten. Karışık oda (bir aile odası + bir çift odası) istenirse eklenebilir.
-4. Otelin o gece kaç boş odası olduğu takip edilmiyor; aynı oda iki ilanı kazanabilir.
+4. Oda stoku şimdilik otelin toplam oda sayısından başlıyor ve yalnızca bu uygulamadaki anlaşmalarla azalıyor. Gerçekte otelin başka kanallardan gelen rezervasyonları da var; otel her akşam o gece boş kalan oda sayısını girebilmeli.
 5. Evli çift seçen alıcıdan girişte belge istenip istenmeyeceği otelin politikası; uygulamada sadece profil eşleşmesi var.
 6. Ödeme ve komisyon modeli yok; kabulden sonra taraflar doğrudan iletişime geçiyor.
 

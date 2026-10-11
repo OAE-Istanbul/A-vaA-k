@@ -200,3 +200,79 @@ test('alıcı ilanını iptal edebilir, başkasının ilanına dokunamaz', () =>
   assert.equal(market.cancelListing('u1', id).status, 'cancelled');
   rejects(() => market.placeOffer('a', id, { price: 1000, roomName: 'Çift oda' }), /süresi doldu/);
 });
+
+// ---- Oda stoku ----
+
+const singleRoomHotels = () => [
+  hotel({ id: 'tiny', name: 'Tek Oda', rooms: [{ name: 'Tiny', capacity: 2, count: 1 }] }),
+  hotel({ id: 'genis', name: 'Geniş Otel', rooms: [{ name: 'Çift oda', capacity: 2, count: 5 }] }),
+];
+
+test('seçim süresi 5 dakika', () => {
+  const { market } = setup();
+  const listing = market.createListing('u1', listingInput());
+  assert.equal(listing.acceptUntil, listing.biddingEndsAt + 5 * MINUTE);
+});
+
+test('aynı oda iki ilanı kazanamaz: ilk kabul eden odayı alır, diğer teklif geri çekilir', () => {
+  const { market, clock } = setup({ hotels: singleRoomHotels() });
+  const a = market.createListing('u1', listingInput());
+  clock.advance(1);
+  const b = market.createListing('u2', listingInput());
+  market.placeOffer('tiny', a.id, { price: 2000, roomName: 'Tiny' });
+  market.placeOffer('tiny', b.id, { price: 2100, roomName: 'Tiny' });
+  market.placeOffer('genis', a.id, { price: 1900, roomName: 'Çift oda' });
+
+  // Sonra açılan ilanın sahibi önce davranırsa oda onun olur.
+  const [viewB] = market.buyerListings('u2');
+  market.acceptOffer('u2', b.id, viewB.offers[0].id);
+
+  const [viewA] = market.buyerListings('u1');
+  assert.deepEqual(viewA.offers.map((o) => o.hotel.id), ['genis']);
+  assert.deepEqual(viewA.withdrawn, [{ hotelName: 'Tek Oda', price: 2000 }]);
+  assert.equal(market.hotelFeed('tiny').live.length, 0);
+  assert.deepEqual(market.hotelFeed('tiny').hotel.roomsTonight, [{ name: 'Tiny', capacity: 2, count: 1, free: 0 }]);
+});
+
+test('boş odası kalmayan otel yeni ilana teklif veremez', () => {
+  const { market, clock } = setup({ hotels: singleRoomHotels() });
+  const a = market.createListing('u1', listingInput());
+  market.placeOffer('tiny', a.id, { price: 2000, roomName: 'Tiny' });
+  market.acceptOffer('u1', a.id, market.buyerListings('u1')[0].offers[0].id);
+
+  clock.advance(1);
+  const b = market.createListing('u2', listingInput());
+  rejects(() => market.placeOffer('tiny', b.id, { price: 1500, roomName: 'Tiny' }), /boş odanız kalmadı/);
+});
+
+test('otomatik kabulde önce açılan ilan odayı alır', () => {
+  const { market, clock } = setup({ hotels: singleRoomHotels() });
+  const a = market.createListing('u1', listingInput());
+  clock.advance(1);
+  const b = market.createListing('u2', listingInput());
+  for (const listing of [a, b]) {
+    market.placeOffer('genis', listing.id, { price: 1600, roomName: 'Çift oda' });
+    market.placeOffer('tiny', listing.id, { price: 1500, roomName: 'Tiny' });
+  }
+
+  // İkisinde de en ucuz teklif tek odalı oteldeki aynı oda; önce açılan a alır.
+  clock.set(b.biddingEndsAt + 6 * MINUTE);
+  assert.deepEqual(market.settle(), [a.id, b.id]);
+  assert.equal(market.buyerListings('u1')[0].acceptedOffer.hotel.id, 'tiny');
+  assert.equal(market.buyerListings('u2')[0].acceptedOffer.hotel.id, 'genis');
+});
+
+test('çok gecelik konaklama ertesi geceyi de doldurur, tek gecelik doldurmaz', () => {
+  const { market, clock } = setup({ hotels: singleRoomHotels() });
+  const a = market.createListing('u1', listingInput({ nights: 2 }));
+  market.placeOffer('tiny', a.id, { price: 3000, roomName: 'Tiny' });
+  market.acceptOffer('u1', a.id, market.buyerListings('u1')[0].offers[0].id);
+
+  clock.set(istanbul(2026, 10, 12, 21, 10));
+  market.createListing('u2', listingInput());
+  assert.equal(market.hotelFeed('tiny').live.length, 0);
+
+  clock.set(istanbul(2026, 10, 13, 21, 10));
+  market.createListing('u1', listingInput());
+  assert.equal(market.hotelFeed('tiny').live.length, 1);
+});

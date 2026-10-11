@@ -1,7 +1,8 @@
+import { bump, flyTo, launchBoat, leafBurst, pressRipple, springIn } from './fx.js';
 import { icon, logo } from './icons.js';
+import { mountRiver } from './river.js';
 import { renderSky, updateSky } from './scenery.js';
 
-const TIME_ZONE = 'Europe/Istanbul';
 const LIVE = new Set(['open', 'awaiting_choice']);
 // Profil seçilince yetişkin, çocuk ve oda sayısını makul varsayılana çeker.
 const GROUP_DEFAULTS = { evli_cift: [2, 0, 1], cift: [2, 0, 1], tek: [1, 0, 1], aile: [2, 1, 1], arkadas: [4, 0, 2] };
@@ -39,11 +40,13 @@ const state = {
   // Sayfa içi onay bekleyen işlem: "accept:<teklif>" ya da "cancel:<ilan>".
   pending: null,
   skyKey: null,
+  viewHtml: null,
   // Yeni gelen teklifleri ve kırılan fiyatları fark etmek için önceki durum.
   seen: new Map(),
   lowest: new Map(),
   arrivals: new Set(),
   drops: new Map(),
+  draftGuests: null,
 };
 
 // ---- Biçimlendirme ----
@@ -55,8 +58,6 @@ const money = (n) => new Intl.NumberFormat('tr-TR').format(n);
 const tl = (n) => `${money(n)} TL`;
 const dateTR = (iso) => iso.split('-').reverse().join('.');
 // Türkçede saat noktayla yazılır: 21.30
-const timeTR = (ms) =>
-  new Intl.DateTimeFormat('tr-TR', { timeZone: TIME_ZONE, hour: '2-digit', minute: '2-digit' }).format(ms).replace(':', '.');
 const clockTR = (hhmm) => hhmm.replace(':', '.');
 const now = () => Date.now() + state.skew;
 
@@ -79,6 +80,26 @@ function people({ adults, children, roomCount = 1 }) {
 function bestPhrase(categories) {
   const names = categories.map((c) => `“${label('bestCategories', c)}”`).join(' ve ');
   return `${names} ${categories.length > 1 ? 'kategorilerinde' : 'kategorisinde'}`;
+}
+
+// ---- Kişi ve oda figürleri ----
+
+/** Misafirleri odalara dağıtılmış figürlerle gösterir: her oda bir dere taşı. */
+function guestIcons({ adults, children, roomCount = 1 }, { size = '', fresh = -1 } = {}) {
+  const rooms = Array.from({ length: roomCount }, () => []);
+  for (let i = 0; i < adults; i++) rooms[i % roomCount].push(['yetiskin', i]);
+  for (let i = 0; i < children; i++) rooms[i % roomCount].push(['cocuk', adults + i]);
+  const text = people({ adults, children, roomCount });
+  const groups = rooms
+    .map((room) => `<span class="oda-kumesi">${room.map(([kind, n]) => `<span class="kisi ${kind}${n === fresh ? ' dogdu' : ''}">${icon(kind)}</span>`).join('')}</span>`)
+    .join('');
+  return `<span class="misafirler ${size}" role="img" aria-label="${text}" title="${text}">${groups}</span>`;
+}
+
+function stay(l) {
+  return `
+    <span class="kalis" title="${l.nights} gece">${icon('ay')}<b>${l.nights}</b><span class="gizli"> gece</span></span>
+    <span class="kalis" title="Tahmini varış">${icon('saat')}<b>${clockTR(l.arrivalTime)}</b><span class="gizli"> varış</span></span>`;
 }
 
 // ---- API ----
@@ -142,7 +163,6 @@ function noticeChanges() {
   const listings = isBuyer ? state.data : state.data.live;
   const messages = [];
   for (const l of listings) {
-    const ids = isBuyer ? l.offers.map((o) => o.id) : [l.id];
     const key = isBuyer ? l.id : 'feed';
     const seen = state.seen.get(key);
     if (seen) {
@@ -154,7 +174,7 @@ function noticeChanges() {
       }
       if (!isBuyer && !seen.has(l.id)) state.arrivals.add(l.id);
     }
-    state.seen.set(key, isBuyer ? new Set(ids) : new Set([...(seen ?? []), l.id]));
+    state.seen.set(key, isBuyer ? new Set(l.offers.map((o) => o.id)) : new Set([...(seen ?? []), l.id]));
 
     const low = isBuyer ? (l.offers[0]?.price ?? null) : l.lowestPrice;
     const previous = state.lowest.get(l.id);
@@ -172,9 +192,10 @@ function noticeChanges() {
 let toastTimer = null;
 function toast(message, kind = 'info') {
   const el = $('#toast');
-  el.innerHTML = `${icon(kind === 'error' ? 'dalga' : 'fener')}<span>${esc(message)}</span>`;
+  el.innerHTML = `${icon(kind === 'error' ? 'dalga' : 'tik')}<span>${esc(message)}</span>`;
   el.className = `toast ${kind}`;
   el.hidden = false;
+  springIn(el);
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => {
     el.hidden = true;
@@ -213,7 +234,6 @@ function restoreForms({ forms, focus }) {
       }
     }
   }
-  syncSteppers(document);
   if (focus) {
     const [el] = find(focus.form, focus.name, focus.value);
     if (el) {
@@ -231,29 +251,43 @@ function restoreForms({ forms, focus }) {
 
 function render() {
   if (!state.meta || !state.market) return;
-  const snapshot = captureForms();
-  $('#session-box').innerHTML = state.session
-    ? `<span class="oturum-ad">${esc(state.session.name)}</span><button class="bag" data-action="logout">Çıkış</button>`
-    : '';
+  renderMenu();
   renderSkyBand();
-  $('#view').innerHTML = !state.session
+  const html = !state.session
     ? landingView()
     : !state.data
       ? '<p class="yukleniyor">Yükleniyor…</p>'
       : state.session.role === 'buyer'
         ? buyerView(state.data)
         : hotelView(state.data);
-  restoreForms(snapshot);
-  animateDrops();
+  // Değişmeyen ekran yeniden çizilmez: animasyonlar ve yazılan metin bozulmasın.
+  if (html !== state.viewHtml) {
+    const snapshot = captureForms();
+    $('#view').innerHTML = html;
+    state.viewHtml = html;
+    restoreForms(snapshot);
+    syncDraft();
+    animateDrops();
+  }
   state.arrivals.clear();
   state.drops.clear();
   tick();
 }
 
+function renderMenu() {
+  const m = state.market;
+  const { marketOpens } = state.meta.rules;
+  $('#menu-durum').innerHTML = m.open
+    ? `<span class="nokta"></span><b>Pazar açık</b><span class="menu-sure">kapanışa <strong data-until="${m.closesAt}"></strong></span>`
+    : `<span class="nokta kapali"></span><b>${clockTR(marketOpens)}'de açılıyor</b><span class="menu-sure"><strong data-until="${m.opensAt}"></strong></span>`;
+  $('#session-box').innerHTML = state.session
+    ? `<span class="oturum-ad"><i>${esc(state.session.name.slice(0, 1))}</i><span>${esc(state.session.name)}</span></span><button class="menu-cikis" data-action="logout">Çıkış</button>`
+    : '';
+}
+
 function renderSkyBand() {
   const m = state.market;
   const { marketOpens, marketCloses } = state.meta.rules;
-  const nightLabel = m.open ? `${dateTR(m.nightDate)} gecesi` : 'Gündüz kapalı';
   // Sahne yalnızca açık/kapalı değişince yeniden çizilir; ateş böcekleri her yenilemede baştan başlamasın.
   const key = `${m.open}-${m.opensAt}`;
   if (state.skyKey === key) return;
@@ -261,10 +295,10 @@ function renderSkyBand() {
   $('#gokyuzu').innerHTML = renderSky(m, {
     opens: clockTR(marketOpens),
     closes: clockTR(marketCloses),
-    nightLabel,
+    nightLabel: m.open ? `${dateTR(m.nightDate)} gecesi` : 'Gündüz kapalı',
     untilLabel: m.open
-      ? `${clockTR(marketCloses)}'ye kadar teklif · kapanışa <strong data-until="${m.closesAt}"></strong>`
-      : `Açılışa <strong data-until="${m.opensAt}"></strong>`,
+      ? `${clockTR(marketCloses)}'ye kadar oteller fiyat kırıyor`
+      : `Boş kalacak odalar ${clockTR(marketOpens)}'de pazara düşer`,
   });
 }
 
@@ -315,14 +349,14 @@ const chip = (name, value, text, { type = 'checkbox', checked = false, iconName 
     <span>${icon(iconName)}<b>${esc(text)}</b></span>
   </label>`;
 
-function stepper(name, text, value, min, max) {
+function stepper(name, iconName, text, value, min, max) {
   return `
-    <div class="sayac">
-      <span class="sayac-ad">${text}</span>
+    <div class="sayac" title="${text}">
+      <span class="sayac-ik ${iconName}" aria-hidden="true">${icon(iconName)}</span>
       <div class="sayac-kontrol">
-        <button type="button" data-adim="-1" aria-label="${text} azalt">−</button>
-        <output>${value}</output>
-        <button type="button" data-adim="1" aria-label="${text} artır">+</button>
+        <button type="button" data-adim="-1" aria-label="${text} azalt">${icon('eksi')}</button>
+        <output aria-label="${text}">${value}</output>
+        <button type="button" data-adim="1" aria-label="${text} artır">${icon('arti')}</button>
       </div>
       <input type="hidden" name="${name}" value="${value}" data-min="${min}" data-max="${max}">
     </div>`;
@@ -385,37 +419,35 @@ function confirmBlock(question, confirmAction, data, confirmText) {
 
 function landingView() {
   const rules = state.meta.rules;
-  const hotelOptions = state.hotels
-    .map((h) => `<option value="${esc(h.id)}">${esc(h.name)}</option>`)
-    .join('');
+  const hotelOptions = state.hotels.map((h) => `<option value="${esc(h.id)}">${esc(h.name)}</option>`).join('');
   return `
-    <section class="giris">
-      <div class="giris-baslik">
+    <div class="kiyilar giris">
+      <div class="kiyi sol">
         <p class="ust-baslik">Şile · Ağva</p>
-        <h1>Bu gece Ağva'da kalın, fiyatı oteller kırsın.</h1>
+        <h1 class="dev">Bu gece Ağva'da kalın. Fiyatı oteller kırsın.</h1>
         <p class="giris-ozet">Göksu ile Yeşilçay'ın denize kavuştuğu yerde bu gece boş kalacak odalar var.
         Ne istediğinizi yazın; size uyan oteller birbirinin fiyatını kırarak teklif versin.</p>
+        <ol class="adimlar">
+          <li><span>${icon('gemi')}</span><div><b>İlanınızı dereye bırakın</b>Kaç kişisiniz, ne zaman varırsınız, neler olmazsa olmaz?</div></li>
+          <li><span>${icon('price')}</span><div><b>Oteller fiyat kırsın</b>Yalnızca size uyan oteller görür. Her yeni teklif en az ${tl(rules.minDecrementTL)} daha ucuz.</div></li>
+          <li><span>${icon('value')}</span><div><b>En iyisini seçin</b>En iyi fiyat, en çok olanak, fiyat/performans. ${rules.acceptGraceMinutes} dakikada seçmezseniz en iyi fiyat sizin.</div></li>
+        </ol>
       </div>
-      <ol class="dere-adimlar">
-          <li><b>İlanınızı bırakın.</b> Kaç kişisiniz, ne zaman varırsınız, neler olmazsa olmaz?</li>
-          <li><b>Oteller fiyat kırsın.</b> İlanınızı yalnızca size uyan oteller görür. Her yeni teklif en az ${tl(rules.minDecrementTL)} daha ucuz olmak zorunda.</li>
-          <li><b>En iyisini seçin.</b> En iyi fiyat, en çok olanak ve fiyat/performans öne çıkar. ${rules.acceptGraceMinutes} dakikada seçmezseniz en iyi fiyat sizin.</li>
-      </ol>
-      <div class="giris-kapilar">
-        <form class="tas tas-1 kapi" data-key="buyer-login">
+      <div class="kiyi sag kapilar">
+        <form class="tas kapi" data-key="buyer-login">
           <h2>${icon('sandal')}Kalacak yer arıyorum</h2>
           <label class="alan">Adınız <input name="name" required maxlength="60" autocomplete="given-name"></label>
           <label class="alan">Cep telefonunuz <input name="phone" required inputmode="tel" placeholder="05XX XXX XX XX" autocomplete="tel"></label>
           <button class="dugme ana">Devam edin</button>
         </form>
-        <form class="tas tas-2 kapi otel-kapisi" data-key="hotel-login">
+        <form class="tas kapi koyu" data-key="hotel-login">
           <h2>${icon('pansiyon')}Otelim var</h2>
           <label class="alan">Otel <select name="hotelId" required>${hotelOptions}</select></label>
           <label class="alan">PIN <input name="pin" type="password" inputmode="numeric" required autocomplete="current-password"></label>
-          <button class="dugme">Otel paneline girin</button>
+          <button class="dugme acik">Otel paneline girin</button>
         </form>
       </div>
-    </section>`;
+    </div>`;
 }
 
 // ---- Alıcı ----
@@ -430,10 +462,10 @@ function buyerView(listings) {
     ? buyerListing(featured)
     : state.market.open
       ? newListingForm()
-      : `<div class="tas tas-2 bos">Pazar şu an kapalı. Her akşam ${clockTR(state.meta.rules.marketOpens)}'de ilan bırakabilirsiniz.</div>`;
+      : `<div class="kiyilar"><div class="kiyi sol"><div class="tas bos">Pazar şu an kapalı. Her akşam ${clockTR(state.meta.rules.marketOpens)}'de ilan bırakabilirsiniz.</div></div></div>`;
   return `
     ${main}
-    ${history.length ? `<section class="gecmis"><h2>Geçmiş ilanlarınız</h2>${history.map(historyRow).join('')}</section>` : ''}`;
+    ${history.length ? `<section class="kiyilar gecmis"><div class="kiyi sol"><h2>Geçmiş ilanlarınız</h2>${history.map(historyRow).join('')}</div></section>` : ''}`;
 }
 
 function newListingForm() {
@@ -447,52 +479,85 @@ function newListingForm() {
     .map((d) => `<label class="secim yalin"><input type="radio" name="durationMinutes" value="${d}"${d === 30 ? ' checked' : ''}><span><b>${d} dk</b></span></label>`)
     .join('');
   return `
-    <form class="ilan-formu" data-key="new-listing">
-      <header class="form-bas">
-        <p class="ust-baslik">Yeni ilan</p>
-        <h1>Bu gece için ilan bırakın</h1>
-        <p>Yazdıklarınızı yalnızca size uyan oteller görür ve birbirinin fiyatını kırarak teklif verir.</p>
-      </header>
+    <div class="kiyilar">
+      <form class="kiyi sol ilan-formu" id="ilan-formu" data-key="new-listing">
+        <header>
+          <p class="ust-baslik">Yeni ilan</p>
+          <h1>Bu gece için ilan bırakın</h1>
+          <p class="soluk">Yazdıklarınızı yalnızca size uyan oteller görür ve birbirinin fiyatını kırarak teklif verir.</p>
+        </header>
+        <fieldset class="tas">
+          <legend>Kimlerle geliyorsunuz?</legend>
+          <div class="secimler">${groups}</div>
+          <div class="sayaclar">
+            ${stepper('adults', 'yetiskin', 'Yetişkin', 2, 1, 8)}
+            ${stepper('children', 'cocuk', 'Çocuk', 0, 0, 6)}
+            ${stepper('roomCount', 'kapi', 'Oda', 1, 1, rules.maxRooms)}
+          </div>
+        </fieldset>
+        <fieldset class="tas">
+          <legend>Ne zaman?</legend>
+          <div class="sayaclar">
+            ${stepper('nights', 'ay', 'Gece', 1, 1, rules.maxNights)}
+            <label class="saat-alani" title="Tahmini varış">${icon('saat')}<input type="time" name="arrivalTime" value="22:30" required aria-label="Tahmini varış"></label>
+          </div>
+        </fieldset>
+        <fieldset class="tas">
+          <legend>Nasıl bir yer? <span>Boş bırakırsanız hepsi</span></legend>
+          <div class="secimler">${types}</div>
+        </fieldset>
+        <fieldset class="tas">
+          <legend>Olmazsa olmazlar <span>Yalnızca bunları sunan oteller teklif verebilir</span></legend>
+          <div class="secimler">${amenities}</div>
+        </fieldset>
+        <fieldset class="tas">
+          <legend>Bütçe ve süre</legend>
+          <div class="butce-sure">
+            <label class="alan">En fazla ödeyeceğiniz toplam <span class="tl-alan"><input type="number" name="maxBudget" min="1" inputmode="numeric" placeholder="İsteğe bağlı"><i>TL</i></span></label>
+            <div class="alan"><span>Oteller ne kadar süre teklif versin?</span><div class="secimler">${durations}</div></div>
+          </div>
+          <label class="alan">Otellere notunuz <textarea name="note" maxlength="500" rows="2" placeholder="Örneğin yıl dönümü, geç varış, bebek yatağı"></textarea></label>
+        </fieldset>
+      </form>
+      <aside class="kiyi sag taslak-kiyi">
+        <div class="taslak tas koyu" id="taslak"></div>
+        <button class="dugme ana iri gemi-dugme" form="ilan-formu">${icon('gemi')}İlanı dereye bırakın</button>
+      </aside>
+    </div>`;
+}
 
-      <fieldset class="tas tas-1">
-        <legend>Kimlerle geliyorsunuz?</legend>
-        <div class="secimler">${groups}</div>
-        <div class="sayaclar">
-          ${stepper('adults', 'Yetişkin', 2, 1, 8)}
-          ${stepper('children', 'Çocuk', 0, 0, 6)}
-          ${stepper('roomCount', 'Oda', 1, 1, rules.maxRooms)}
-        </div>
-      </fieldset>
-
-      <fieldset class="tas tas-2">
-        <legend>Ne zaman?</legend>
-        <div class="sayaclar">
-          ${stepper('nights', 'Gece', 1, 1, rules.maxNights)}
-          <label class="alan saat-alani">Tahmini varış <input type="time" name="arrivalTime" value="22:30" required></label>
-        </div>
-      </fieldset>
-
-      <fieldset class="tas tas-3">
-        <legend>Nasıl bir yer? <span>Boş bırakırsanız hepsi</span></legend>
-        <div class="secimler">${types}</div>
-      </fieldset>
-
-      <fieldset class="tas tas-1">
-        <legend>Olmazsa olmazlar <span>Yalnızca bunları sunan oteller teklif verebilir</span></legend>
-        <div class="secimler">${amenities}</div>
-      </fieldset>
-
-      <fieldset class="tas tas-2">
-        <legend>Bütçe ve süre</legend>
-        <div class="butce-sure">
-          <label class="alan">En fazla ödeyeceğiniz toplam <span class="tl-alan"><input type="number" name="maxBudget" min="1" inputmode="numeric" placeholder="İsteğe bağlı"><i>TL</i></span></label>
-          <div class="alan"><span>Oteller ne kadar süre teklif versin?</span><div class="secimler">${durations}</div></div>
-        </div>
-        <label class="alan">Otellere notunuz <textarea name="note" maxlength="500" rows="2" placeholder="Örneğin yıl dönümü, geç varış, bebek yatağı"></textarea></label>
-      </fieldset>
-
-      <button class="dugme ana iri">İlanı bırakın</button>
-    </form>`;
+/** Form doldurulurken sağ kıyıdaki ilan önizlemesini günceller. */
+function syncDraft() {
+  const form = document.getElementById('ilan-formu');
+  const box = document.getElementById('taslak');
+  if (!form || !box) return;
+  syncSteppers(form);
+  const fd = new FormData(form);
+  const draft = {
+    group: fd.get('group'),
+    adults: Number(fd.get('adults')),
+    children: Number(fd.get('children')),
+    roomCount: Number(fd.get('roomCount')),
+    nights: Number(fd.get('nights')),
+    arrivalTime: fd.get('arrivalTime') || '22:30',
+    hotelTypes: fd.getAll('hotelTypes'),
+    amenities: fd.getAll('amenities'),
+    maxBudget: fd.get('maxBudget') ? Number(fd.get('maxBudget')) : null,
+    durationMinutes: Number(fd.get('durationMinutes')),
+  };
+  // Yeni eklenen kişi figürü zıplayarak gelsin.
+  const before = state.draftGuests;
+  let fresh = -1;
+  if (before && draft.adults > before.adults) fresh = draft.adults - 1;
+  else if (before && draft.children > before.children) fresh = draft.adults + draft.children - 1;
+  state.draftGuests = { adults: draft.adults, children: draft.children };
+  box.innerHTML = `
+    <p class="ust-baslik">İlanınız böyle görünecek</p>
+    <p class="kimler">${icon(draft.group)}<span>${esc(label('guestGroups', draft.group))}</span></p>
+    ${guestIcons(draft, { size: 'iri', fresh })}
+    <div class="kalislar">${stay(draft)}</div>
+    ${requestList(draft)}
+    <p class="taslak-alt">${draft.maxBudget ? `En fazla <b>${tl(draft.maxBudget)}</b> · ` : ''}Oteller <b>${draft.durationMinutes} dakika</b> teklif verir</p>`;
 }
 
 function buyerListing(l) {
@@ -500,7 +565,7 @@ function buyerListing(l) {
   const grace = state.meta.rules.acceptGraceMinutes;
   const timer =
     l.status === 'open'
-      ? crossing(l.createdAt, l.biddingEndsAt, `Teklifler <strong data-until="${l.biddingEndsAt}"></strong> sonra kapanıyor. Sonra ${grace} dakika içinde öne çıkanlardan birini seçin; seçmezseniz en iyi fiyat sizin olur.`)
+      ? crossing(l.createdAt, l.biddingEndsAt, `Teklifler <strong data-until="${l.biddingEndsAt}"></strong> sonra kapanıyor. Sonra ${grace} dakikanız var; seçmezseniz en iyi fiyat sizin olur.`)
       : l.status === 'awaiting_choice'
         ? `<p class="secim-suresi">${icon('fener')}<span>Teklifler kapandı. <strong data-until="${l.acceptUntil}"></strong> içinde seçmezseniz en iyi fiyat otomatik kabul edilir.</span></p>`
         : '';
@@ -514,33 +579,40 @@ function buyerListing(l) {
 
   const best = l.offers[0];
   return `
-    <div class="ilan-duzen">
-      <aside class="ilan-ozet tas tas-3">
-        <div class="ozet-bas">
-          <p class="ust-baslik">Sizin ilanınız</p>
-          ${statusPill(l.status)}
+    <div class="kiyilar">
+      <aside class="kiyi sol">
+        <div class="ilan-ozet tas koyu">
+          <div class="ozet-bas">
+            <p class="ust-baslik">Sizin ilanınız · ${dateTR(l.checkIn)}</p>
+            ${statusPill(l.status)}
+          </div>
+          <p class="kimler">${icon(l.group)}<span>${esc(label('guestGroups', l.group))}</span></p>
+          ${guestIcons(l, { size: 'iri' })}
+          <div class="kalislar">${stay(l)}</div>
+          ${requestList(l)}
+          ${l.maxBudget ? `<p class="soluk">En fazla ${tl(l.maxBudget)}</p>` : ''}
+          ${l.note ? `<p class="alici-notu">“${esc(l.note)}”</p>` : ''}
+          ${best && live ? `<p class="en-iyi"><span>Şu an en iyi fiyat</span><b data-lowest-for="${esc(l.id)}" data-value="${best.price}">${tl(best.price)}</b></p>` : ''}
+          ${timer}
+          ${cancel}
         </div>
-        <h1>${dateTR(l.checkIn)} gecesi</h1>
-        <p class="kimler">${icon(l.group)}<span>${esc(label('guestGroups', l.group))} · ${people(l)}</span></p>
-        <p class="soluk">${l.nights} gece · varış ${clockTR(l.arrivalTime)}${l.maxBudget ? ` · en fazla ${tl(l.maxBudget)}` : ''}</p>
-        ${requestList(l)}
-        ${l.note ? `<p class="alici-notu">“${esc(l.note)}”</p>` : ''}
-        ${best && live ? `<p class="en-iyi">Şu an en iyi fiyat <span data-lowest-for="${esc(l.id)}" data-value="${best.price}">${tl(best.price)}</span></p>` : ''}
-        ${timer}
-        ${cancel}
       </aside>
-      <section class="teklifler">${offersSection(l, live)}</section>
+      <section class="kiyi sag teklifler">${offersSection(l, live)}</section>
     </div>`;
 }
 
 function offersSection(l, live) {
   if (l.status === 'accepted') return acceptedBlock(l);
+  const withdrawn = l.withdrawn.length
+    ? `<p class="not uyari">${icon('kapi')}<span>${esc([...new Set(l.withdrawn.map((w) => w.hotelName))].join(', '))} odasını başka bir misafire verdi; o teklif listeden çıktı.</span></p>`
+    : '';
   if (l.offers.length === 0) {
     return `
+      ${withdrawn}
       <div class="bekleme">
         <div class="halkalar" aria-hidden="true"><i></i><i></i><i></i></div>
         <h2>${live ? 'Teklifler bekleniyor' : 'Teklif gelmedi'}</h2>
-        <p>${live ? 'İsteklerinize uyan oteller ilanınızı şu an görüyor. İlk teklif geldiğinde burada belirecek.' : 'Bu ilana teklif verilmedi.'}</p>
+        <p>${live ? 'İsteklerinize uyan oteller ilanınızı şu an görüyor. İlk teklif dereden süzülüp buraya gelecek.' : 'Bu ilana teklif verilmedi.'}</p>
       </div>`;
   }
   const bests = l.offers.filter((o) => o.best.length > 0);
@@ -548,9 +620,10 @@ function offersSection(l, live) {
   return `
     <header class="teklif-bas">
       <h2>Öne çıkanlar</h2>
-      <p>${l.offers.length} teklif geldi. Aşağıdakilerden birini seçebilirsiniz.</p>
+      <p>${l.offers.length} teklif geldi. Bunlardan birini seçebilirsiniz.</p>
     </header>
-    <ol class="teklif-listesi">${bests.map((o, i) => offerCard(l, o, live, i)).join('')}</ol>
+    ${withdrawn}
+    <ol class="teklif-listesi">${bests.map((o) => offerCard(l, o, live)).join('')}</ol>
     ${others.length ? `
       <h3 class="diger-bas">Diğer teklifler</h3>
       <ul class="diger-teklifler">${others.map((o) => `
@@ -560,15 +633,15 @@ function offersSection(l, live) {
       </ul>` : ''}`;
 }
 
-function offerCard(listing, offer, canAccept, index) {
+function offerCard(listing, offer, canAccept) {
   const key = `accept:${offer.id}`;
   const confirming = canAccept && state.pending === key;
   const fresh = now() - offer.createdAt < FRESH_MS;
   const amenities = offer.hotel.amenities
-    .map((a) => `<li class="${listing.amenities.includes(a) ? 'istenen' : ''}">${icon(a)}${esc(label('amenities', a))}</li>`)
+    .map((a) => `<li class="${listing.amenities.includes(a) ? 'istenen' : ''}" title="${esc(label('amenities', a))}">${icon(a)}<span>${esc(label('amenities', a))}</span></li>`)
     .join('');
   return `
-    <li class="teklif tas tas-${(index % 3) + 1} ${state.arrivals.has(offer.id) ? 'geldi' : ''}">
+    <li class="teklif tas ${state.arrivals.has(offer.id) ? 'geldi' : ''}">
       <div class="teklif-ust">
         <div class="damgalar">${offer.best.map((c) => `<span class="damga">${icon(c)}${esc(label('bestCategories', c))}</span>`).join('')}</div>
         ${fresh ? `<span class="taze">${icon('fener')}az önce</span>` : ''}
@@ -586,14 +659,15 @@ function offerCard(listing, offer, canAccept, index) {
           ${canAccept && !confirming ? `<button class="dugme ana" data-action="ask" data-key="${esc(key)}">Bunu seçin</button>` : ''}
         </div>
       </div>
-      ${confirming ? confirmBlock(`<b>${esc(offer.hotel.name)}</b>, ${tl(offer.price)}. Kabul edilsin mi? İlan kapanır, adınız ve telefonunuz otelle paylaşılır.`, 'confirm-accept', { listing: listing.id, offer: offer.id }, 'Evet, kabul ediyorum') : ''}
+      ${confirming ? confirmBlock(`<b>${esc(offer.hotel.name)}</b>, ${tl(offer.price)}. Kabul edilsin mi? İlan kapanır, adınız ve telefonunuz otelle paylaşılır.`, 'confirm-accept', { listing: listing.id, offer: offer.id }, 'Evet, anlaşalım') : ''}
     </li>`;
 }
 
 function acceptedBlock(l) {
   const a = l.acceptedOffer;
   return `
-    <div class="anlasma tas tas-1">
+    <div class="anlasma tas">
+      <span class="anlasma-tik">${icon('tik')}</span>
       <p class="ust-baslik">${l.autoAccepted ? 'Süre dolduğu için en iyi fiyat seçildi' : 'Anlaştınız'}</p>
       <h2>${esc(a.hotel.name)}</h2>
       <p class="tip">${icon(a.hotel.type)}${esc(label('hotelTypes', a.hotel.type))} · ${esc(a.roomName)}${l.roomCount > 1 ? ` × ${l.roomCount}` : ''}</p>
@@ -611,7 +685,7 @@ function historyRow(l) {
   return `
     <div class="gecmis-satir">
       <span>${dateTR(l.checkIn)}</span>
-      <span>${esc(label('guestGroups', l.group))} · ${people(l)}</span>
+      ${guestIcons(l, { size: 'ufak' })}
       <span>${outcome}</span>
       ${statusPill(l.status)}
     </div>`;
@@ -619,41 +693,50 @@ function historyRow(l) {
 
 // ---- Otel ----
 
-function hotelView({ hotel, live, won }) {
-  const rooms = hotel.rooms.map((r) => `${esc(r.name)} (${r.capacity} kişilik${r.count ? `, ${r.count} adet` : ''})`).join(' · ');
-  const groups = hotel.acceptedGroups.map((g) => label('guestGroups', g)).join(', ');
-  const closedNotice = state.market.open
-    ? ''
-    : `<div class="tas tas-2 bos">Pazar kapalı. İlanlar her akşam ${clockTR(state.meta.rules.marketOpens)}'de düşmeye başlar.</div>`;
+function roomsTonight(rooms) {
   return `
-    <section class="otel-serit">
-      <div class="otel-kimlik">
-        ${icon(hotel.type, 'iri')}
-        <div>
-          <p class="ust-baslik">${esc(label('hotelTypes', hotel.type))}</p>
-          <h1>${esc(hotel.name)}</h1>
-        </div>
-      </div>
-      <ul class="olanaklar">${hotel.amenities.map((a) => `<li>${icon(a)}${esc(label('amenities', a))}</li>`).join('')}</ul>
-      <p class="soluk">Kabul ettiğiniz misafirler: ${esc(groups)}<br>Odalar: ${rooms}</p>
-    </section>
-    <section class="otel-ilanlar">
-      <header class="teklif-bas">
-        <h2>Size uygun ilanlar</h2>
-        <p>${live.length ? `${live.length} ilan, isteklerine uyduğunuz için size gösteriliyor.` : ''}</p>
-      </header>
-      ${closedNotice}
-      ${live.length ? live.map(hotelListingCard).join('') : state.market.open ? `
-        <div class="bekleme">
-          <div class="halkalar" aria-hidden="true"><i></i><i></i><i></i></div>
-          <h2>Şu an size uygun ilan yok</h2>
-          <p>Yeni ilan düştüğünde bu sayfa kendiliğinden güncellenir.</p>
-        </div>` : ''}
-    </section>
-    ${won.length ? `<section class="kazanilanlar"><h2>Kazandığınız ilanlar</h2>${won.map(wonCard).join('')}</section>` : ''}`;
+    <ul class="bu-gece">${rooms.map((r) => `
+      <li>
+        <div><b>${esc(r.name)}</b><span class="kapasite" title="${r.capacity} kişilik">${Array.from({ length: r.capacity }, () => icon('yetiskin')).join('')}</span></div>
+        <span class="kapilar-dizi" role="img" aria-label="${r.free} boş, ${r.count} toplam">${Array.from({ length: r.count }, (_, i) => `<i class="${i < r.free ? 'oda-bos' : 'oda-dolu'}">${icon('kapi')}</i>`).join('')}</span>
+      </li>`).join('')}
+    </ul>`;
 }
 
-function hotelListingCard(l, index) {
+function hotelView({ hotel, live, won }) {
+  const closedNotice = state.market.open
+    ? ''
+    : `<div class="tas bos">Pazar kapalı. İlanlar her akşam ${clockTR(state.meta.rules.marketOpens)}'de düşmeye başlar.</div>`;
+  return `
+    <div class="kiyilar">
+      <aside class="kiyi sol">
+        <div class="tas koyu otel-kimlik">
+          <p class="ust-baslik">${icon(hotel.type)}${esc(label('hotelTypes', hotel.type))}</p>
+          <h1>${esc(hotel.name)}</h1>
+          <p class="kabul">${hotel.acceptedGroups.map((g) => `<span title="${esc(label('guestGroups', g))}">${icon(g)}</span>`).join('')}</p>
+          <ul class="olanaklar">${hotel.amenities.map((a) => `<li>${icon(a)}<span>${esc(label('amenities', a))}</span></li>`).join('')}</ul>
+          <h3>Bu gece boş odalarınız</h3>
+          ${roomsTonight(hotel.roomsTonight)}
+        </div>
+        ${won.length ? `<section class="kazanilanlar"><h2>Kazandığınız ilanlar</h2>${won.map(wonCard).join('')}</section>` : ''}
+      </aside>
+      <section class="kiyi sag">
+        <header class="teklif-bas">
+          <h2>Size uygun ilanlar</h2>
+          <p>${live.length ? 'İsteklerine uyduğunuz ve boş odanız olduğu için size gösteriliyor.' : ''}</p>
+        </header>
+        ${closedNotice}
+        ${live.length ? live.map(hotelListingCard).join('') : state.market.open ? `
+          <div class="bekleme">
+            <div class="halkalar" aria-hidden="true"><i></i><i></i><i></i></div>
+            <h2>Şu an size uygun ilan yok</h2>
+            <p>Yeni ilan dereden geldiğinde bu sayfa kendiliğinden güncellenir.</p>
+          </div>` : ''}
+      </section>
+    </div>`;
+}
+
+function hotelListingCard(l) {
   const stillBest = l.myBest.filter((c) => c !== 'price');
   const myStatus = l.iAmLowest
     ? `<p class="not iyi">${icon('price')}<span>En düşük teklif sizde: <b>${tl(l.myOffer.price)}</b>${stillBest.length ? `. Ayrıca ${esc(bestPhrase(stillBest))} öne çıkıyorsunuz.` : ''}</span></p>`
@@ -662,26 +745,24 @@ function hotelListingCard(l, index) {
       : '';
   const kirildi = state.drops.has(l.id) && !l.iAmLowest;
   return `
-    <article class="ilan-kart tas tas-${(index % 3) + 1} ${state.arrivals.has(l.id) ? 'geldi' : ''} ${kirildi ? 'kirildi' : ''}">
-      <div class="ilan-kart-sol">
+    <article class="ilan-kart tas ${state.arrivals.has(l.id) ? 'geldi' : ''} ${kirildi ? 'kirildi' : ''}">
+      <div class="ilan-kart-bas">
         <p class="kimler">${icon(l.group)}<span>${esc(label('guestGroups', l.group))}</span></p>
-        <h3>${people(l)}</h3>
-        <p class="soluk">${dateTR(l.checkIn)} gecesi · ${l.nights} gece · varış ${clockTR(l.arrivalTime)}</p>
-        ${requestList(l, { compact: true })}
-        ${l.note ? `<p class="alici-notu">“${esc(l.note)}”</p>` : ''}
+        ${guestIcons(l, { size: 'iri' })}
+        <div class="kalislar">${stay(l)}</div>
       </div>
-      <div class="ilan-kart-sag">
-        ${l.status === 'open'
-          ? crossing(l.createdAt, l.biddingEndsAt, `Teklif için <strong data-until="${l.biddingEndsAt}"></strong>`)
-          : `<p class="secim-suresi">${icon('fener')}<span>Teklifler kapandı, alıcı seçim yapıyor.</span></p>`}
-        <dl class="ozet-sayilar">
-          <div><dt>En düşük</dt><dd>${l.lowestPrice != null ? `<span data-lowest-for="${esc(l.id)}" data-value="${l.lowestPrice}">${tl(l.lowestPrice)}</span>` : 'Henüz yok'}</dd></div>
-          <div><dt>Teklif</dt><dd>${l.offerCount}</dd></div>
-          <div><dt>Bütçe</dt><dd>${l.maxBudget ? tl(l.maxBudget) : 'Serbest'}</dd></div>
-        </dl>
-        ${myStatus}
-        ${l.status === 'open' && !l.iAmLowest ? offerForm(l) : ''}
-      </div>
+      ${requestList(l, { compact: true })}
+      ${l.note ? `<p class="alici-notu">“${esc(l.note)}”</p>` : ''}
+      ${l.status === 'open'
+        ? crossing(l.createdAt, l.biddingEndsAt, `Teklif için <strong data-until="${l.biddingEndsAt}"></strong>`)
+        : `<p class="secim-suresi">${icon('fener')}<span>Teklifler kapandı, alıcı seçim yapıyor.</span></p>`}
+      <dl class="ozet-sayilar">
+        <div><dt>En düşük</dt><dd>${l.lowestPrice != null ? `<span data-lowest-for="${esc(l.id)}" data-value="${l.lowestPrice}">${tl(l.lowestPrice)}</span>` : 'Henüz yok'}</dd></div>
+        <div><dt>Teklif</dt><dd>${l.offerCount}</dd></div>
+        <div><dt>Bütçe</dt><dd>${l.maxBudget ? tl(l.maxBudget) : 'Serbest'}</dd></div>
+      </dl>
+      ${myStatus}
+      ${l.status === 'open' && !l.iAmLowest ? offerForm(l) : ''}
     </article>`;
 }
 
@@ -706,10 +787,11 @@ function offerForm(l) {
 
 function wonCard(l) {
   return `
-    <article class="anlasma tas tas-2">
+    <article class="anlasma tas">
       <p class="ust-baslik">${l.autoAccepted ? 'En iyi fiyat olarak otomatik kazandınız' : 'Alıcı sizi seçti'}</p>
-      <h3>${esc(l.buyer.name)} · ${people(l)}</h3>
-      <p class="soluk">${dateTR(l.checkIn)} gecesi · ${l.nights} gece · varış ${clockTR(l.arrivalTime)}</p>
+      <h3>${esc(l.buyer.name)}</h3>
+      ${guestIcons(l)}
+      <div class="kalislar">${stay(l)}</div>
       <p class="fiyat">${tl(l.acceptedOffer.price)} <span>${esc(l.acceptedOffer.roomName)}${l.roomCount > 1 ? ` × ${l.roomCount}` : ''}</span></p>
       <dl class="iletisim"><div><dt>Telefon</dt><dd><a href="tel:${esc(l.buyer.phone)}">${esc(l.buyer.phone)}</a></dd></div></dl>
     </article>`;
@@ -728,6 +810,7 @@ async function withBusy(button, fn) {
   }
 }
 
+// Gönderim işleyicileri, ekran yenilendikten sonra oynatılacak hareketi döndürebilir.
 const submitHandlers = {
   'buyer-login': async (form, fd) => {
     const session = await api('/api/session', { method: 'POST', body: { role: 'buyer', name: fd.get('name'), phone: fd.get('phone') } });
@@ -737,7 +820,8 @@ const submitHandlers = {
     const session = await api('/api/session', { method: 'POST', body: { role: 'hotel', hotelId: fd.get('hotelId'), pin: fd.get('pin') } });
     setSession(session);
   },
-  'new-listing': async (form, fd) => {
+  'new-listing': async (form, fd, button) => {
+    const from = button?.getBoundingClientRect();
     await api('/api/listings', {
       method: 'POST',
       body: {
@@ -754,15 +838,20 @@ const submitHandlers = {
         note: fd.get('note'),
       },
     });
-    toast('İlanınız yayında. Uygun oteller teklif vermeye başlayabilir.', 'success');
+    toast('İlanınız dereye bırakıldı. Uygun oteller teklif vermeye başlayabilir.', 'success');
+    state.draftGuests = null;
+    return () => from && launchBoat(from, icon('gemi'));
   },
-  offer: async (form, fd) => {
+  offer: async (form, fd, button) => {
+    const from = button?.getBoundingClientRect();
+    const listingId = form.dataset.listing;
     const price = Number(fd.get('price'));
-    await api(`/api/listings/${encodeURIComponent(form.dataset.listing)}/offers`, {
+    await api(`/api/listings/${encodeURIComponent(listingId)}/offers`, {
       method: 'POST',
       body: { price, roomName: fd.get('roomName'), note: fd.get('note') },
     });
     toast(`${tl(price)} teklifiniz alıcıya ulaştı.`, 'success');
+    return () => from && flyTo(tl(price), from, document.querySelector(`[data-lowest-for="${CSS.escape(listingId)}"]`));
   },
 };
 
@@ -783,10 +872,12 @@ const clickHandlers = {
     return false;
   },
   'confirm-accept': async (button) => {
+    const from = button.getBoundingClientRect();
     const { listing, offer } = button.dataset;
     await api(`/api/listings/${encodeURIComponent(listing)}/accept`, { method: 'POST', body: { offerId: offer } });
     state.pending = null;
     toast('Anlaştınız. İyi tatiller!', 'success');
+    return () => leafBurst(from, icon('yaprak'));
   },
   'confirm-cancel': async (button) => {
     await api(`/api/listings/${encodeURIComponent(button.dataset.listing)}/cancel`, { method: 'POST' });
@@ -796,46 +887,60 @@ const clickHandlers = {
 };
 
 function bindEvents() {
+  document.addEventListener('pointerdown', pressRipple);
+
   document.addEventListener('submit', (event) => {
     const form = event.target.closest('form[data-key]');
     if (!form) return;
     event.preventDefault();
     const handler = submitHandlers[form.dataset.key.startsWith('offer-') ? 'offer' : form.dataset.key];
-    withBusy(form.querySelector('button:not([type="button"])'), async () => {
-      await handler(form, new FormData(form));
+    const button = form.querySelector('button:not([type="button"])') ?? document.querySelector(`button[form="${form.id}"]`);
+    withBusy(button, async () => {
+      const after = await handler(form, new FormData(form), button);
       form.reset();
       await refresh();
+      if (typeof after === 'function') after();
     });
   });
 
   document.addEventListener('click', (event) => {
     const stepButton = event.target.closest('[data-adim]');
     if (stepButton) {
-      const input = stepButton.closest('.sayac').querySelector('input');
+      const box = stepButton.closest('.sayac');
+      const input = box.querySelector('input');
       const next = Number(input.value) + Number(stepButton.dataset.adim);
       input.value = Math.min(Number(input.dataset.max), Math.max(Number(input.dataset.min), next));
-      syncSteppers(stepButton.closest('form'));
+      syncDraft();
+      bump(box.querySelector('output'));
       return;
     }
     const fill = event.target.closest('[data-fill]');
     if (fill) {
-      fill.closest('form').elements.price.value = fill.dataset.fill;
+      const input = fill.closest('form').elements.price;
+      input.value = fill.dataset.fill;
+      bump(input);
       return;
     }
     const button = event.target.closest('[data-action]');
     if (!button) return;
     withBusy(button, async () => {
-      if ((await clickHandlers[button.dataset.action](button)) !== false) await refresh();
+      const result = await clickHandlers[button.dataset.action](button);
+      if (result === false) return;
+      await refresh();
+      if (typeof result === 'function') result();
     });
   });
 
   document.addEventListener('change', (event) => {
-    if (event.target.name !== 'group') return;
-    const defaults = GROUP_DEFAULTS[event.target.value];
     const form = event.target.form;
-    if (!defaults || !form) return;
-    [form.elements.adults.value, form.elements.children.value, form.elements.roomCount.value] = defaults;
-    syncSteppers(form);
+    if (event.target.name === 'group' && form) {
+      const defaults = GROUP_DEFAULTS[event.target.value];
+      if (defaults) [form.elements.adults.value, form.elements.children.value, form.elements.roomCount.value] = defaults;
+    }
+    if (form?.id === 'ilan-formu') syncDraft();
+  });
+  document.addEventListener('input', (event) => {
+    if (event.target.form?.id === 'ilan-formu') syncDraft();
   });
 }
 
@@ -848,7 +953,8 @@ window.addEventListener('agva:session', (event) => {
 });
 
 async function init() {
-  $('#marka').innerHTML = `${logo}<span class="marka-ad">Ağva</span><span class="marka-alt">gece pazarı</span>`;
+  $('#marka').innerHTML = `${logo}<span class="marka-ad">Ağva</span>`;
+  mountRiver($('#akis'));
   try {
     state.meta = await api('/api/meta');
   } catch (err) {

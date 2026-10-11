@@ -15,7 +15,7 @@ export const defaultConfig = Object.freeze({
   // Son dakikalarda gelen teklif süreyi bu kadar uzatır (son saniye kapışmasını önler).
   softCloseMinutes: Number(env.UZATMA_DK ?? 2),
   // Teklif süresi bittikten sonra alıcının seçim yapabileceği süre. Seçmezse en iyi fiyat otomatik kabul edilir.
-  acceptGraceMinutes: Number(env.KABUL_SURESI_DK ?? 15),
+  acceptGraceMinutes: Number(env.KABUL_SURESI_DK ?? 5),
   maxNights: Number(env.MAKS_GECE ?? 3),
   maxRooms: Number(env.MAKS_ODA ?? 4),
   dataFile: env.VERI_DOSYASI ?? 'data/db.json',

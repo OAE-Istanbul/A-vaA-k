@@ -1,10 +1,11 @@
-import { marketWindow } from './clock.js';
+import { isoDate, localParts, marketWindow } from './clock.js';
 import { checkEligibility, roomCount, suitableRooms } from './eligibility.js';
 import { MarketError } from './errors.js';
 import { newId } from './ids.js';
 import { validateListingInput, validateOfferInput } from './validation.js';
 
 const MINUTE = 60_000;
+const DAY = 24 * 60 * MINUTE;
 const LIVE_STATUSES = new Set(['open', 'awaiting_choice']);
 
 export const formatTL = (n) => `${new Intl.NumberFormat('tr-TR').format(n)} TL`;
@@ -25,6 +26,10 @@ const BEST_SCORES = {
  * İlan durumları: open (teklif alıyor), awaiting_choice (süre bitti, alıcı öne çıkan
  * tekliflerden birini seçiyor), accepted, cancelled, expired. Alıcı seçim süresinde
  * seçmezse en iyi fiyat otomatik kabul edilir (settle).
+ *
+ * Oda stoku: bir oda aynı gece iki ilanı kazanamaz. İlk kabul edilen teklif odayı alır;
+ * otelin aynı oda tipindeki, artık karşılanamayan diğer teklifleri geri çekilir.
+ * Otomatik kabulde önce açılan ilan önce seçer.
  */
 export class Marketplace {
   #listeners = new Set();
@@ -97,21 +102,86 @@ export class Marketplace {
     return 'expired';
   }
 
-  /** Seçim süresi dolan ilanlarda en iyi fiyatı otomatik kabul eder. Periyodik olarak da çağrılır. */
+  /**
+   * Seçim süresi dolan ilanlarda en iyi fiyatı otomatik kabul eder. Periyodik olarak da çağrılır.
+   * Önce açılan ilan önce işlenir; böylece aynı odaya iki ilan talipse ilk ilan odayı alır.
+   */
   settle(now = this.clock()) {
     const settled = [];
-    for (const listing of Object.values(this.#db.listings)) {
-      if (listing.status !== 'active' || now < this.acceptUntil(listing)) continue;
+    const due = Object.values(this.#db.listings)
+      .filter((l) => l.status === 'active' && now >= this.acceptUntil(l))
+      .sort((a, b) => a.createdAt - b.createdAt);
+    for (const listing of due) {
       const [cheapest] = this.activeOffers(listing.id);
       if (!cheapest) continue;
-      listing.status = 'accepted';
-      listing.acceptedOfferId = cheapest.id;
-      listing.autoAccepted = true;
-      listing.closedAt = this.acceptUntil(listing);
+      this.#accept(listing, cheapest, this.acceptUntil(listing), { auto: true });
       settled.push(listing.id);
     }
     if (settled.length > 0) this.#commit({ type: 'auto_accepted', listingIds: settled });
     return settled;
+  }
+
+  // ---- Oda stoku ----
+
+  /** İlanın kapladığı geceler: [ilk gece, son geceden sonraki gün) gün numarası olarak. */
+  #nights(listing) {
+    const [y, m, d] = listing.checkIn.split('-').map(Number);
+    const start = Date.UTC(y, m - 1, d) / DAY;
+    return [start, start + listing.nights];
+  }
+
+  /** Bu otelin bu oda tipinden, ilanın gecelerinde başka anlaşmalara verilmiş oda sayısı. */
+  #roomsTaken(hotelId, roomName, listing) {
+    const [start, end] = this.#nights(listing);
+    let taken = 0;
+    for (const other of Object.values(this.#db.listings)) {
+      if (other.status !== 'accepted' || other.id === listing.id) continue;
+      const offer = this.#db.offers[other.acceptedOfferId];
+      if (offer.hotelId !== hotelId || offer.roomName !== roomName) continue;
+      const [s, e] = this.#nights(other);
+      if (s < end && start < e) taken += roomCount(other);
+    }
+    return taken;
+  }
+
+  /** İlana uyan ve o gecelerde hâlâ yeterince boş olan oda tipleri. */
+  availableRooms(hotel, listing) {
+    return suitableRooms(hotel, listing).filter(
+      (room) => (room.count ?? 1) - this.#roomsTaken(hotel.id, room.name, listing) >= roomCount(listing),
+    );
+  }
+
+  /** Otel panelindeki "bu gece boş odalarınız" özeti. */
+  #roomsTonight(hotel, nightDate) {
+    const night = { id: null, checkIn: nightDate, nights: 1 };
+    return hotel.rooms.map((room) => ({
+      name: room.name,
+      capacity: room.capacity,
+      count: room.count ?? 1,
+      free: Math.max(0, (room.count ?? 1) - this.#roomsTaken(hotel.id, room.name, night)),
+    }));
+  }
+
+  #accept(listing, offer, at, { auto = false } = {}) {
+    listing.status = 'accepted';
+    listing.acceptedOfferId = offer.id;
+    listing.autoAccepted = auto;
+    listing.closedAt = at;
+    this.#withdrawConflicts(offer, at);
+  }
+
+  /** Oda dolunca otelin aynı oda tipindeki, artık karşılanamayan teklifleri geri çekilir. */
+  #withdrawConflicts(accepted, at) {
+    const hotel = this.#db.hotels[accepted.hotelId];
+    for (const offer of Object.values(this.#db.offers)) {
+      if (!offer.active || offer.id === accepted.id || offer.hotelId !== hotel.id || offer.roomName !== accepted.roomName) continue;
+      const listing = this.#db.listings[offer.listingId];
+      if (listing.status !== 'active') continue;
+      if (this.availableRooms(hotel, listing).some((room) => room.name === offer.roomName)) continue;
+      offer.active = false;
+      offer.withdrawnReason = 'room_taken';
+      offer.withdrawnAt = at;
+    }
   }
 
   // ---- Alıcı işlemleri ----
@@ -176,9 +246,15 @@ export class Marketplace {
     if (!this.bestOffers(listing.id).has(offer.id)) {
       throw new MarketError('Yalnızca öne çıkan tekliflerden birini seçebilirsiniz.', 409);
     }
-    listing.status = 'accepted';
-    listing.acceptedOfferId = offer.id;
-    listing.closedAt = now;
+    const hotel = this.#db.hotels[offer.hotelId];
+    if (!this.availableRooms(hotel, listing).some((room) => room.name === offer.roomName)) {
+      offer.active = false;
+      offer.withdrawnReason = 'room_taken';
+      offer.withdrawnAt = now;
+      this.#commit({ type: 'offer_withdrawn', listingId });
+      throw new MarketError('Bu oda az önce başka bir misafire gitti. Öne çıkanlar yenilendi.', 409);
+    }
+    this.#accept(listing, offer, now);
     this.#commit({ type: 'offer_accepted', listingId });
     return this.#buyerView(listing, now);
   }
@@ -210,6 +286,9 @@ export class Marketplace {
     const { price, roomName, note } = validateOfferInput(input);
     if (!suitableRooms(hotel, listing).some((room) => room.name === roomName)) {
       throw new MarketError('Seçilen oda tipi bu ilan için uygun değil.');
+    }
+    if (!this.availableRooms(hotel, listing).some((room) => room.name === roomName)) {
+      throw new MarketError('Bu oda tipinden o gece için boş odanız kalmadı.', 409);
     }
     if (listing.maxBudget != null && price > listing.maxBudget) {
       throw new MarketError(`Alıcının bütçe üst sınırı ${formatTL(listing.maxBudget)}.`);
@@ -251,8 +330,14 @@ export class Marketplace {
     const hotel = this.#hotel(hotelId);
     const listings = Object.values(this.#db.listings);
 
+    // Boş odası kalmayan otel ilanı görmez; teklif veremeyeceği ilanla meşgul olmasın.
     const live = listings
-      .filter((l) => LIVE_STATUSES.has(this.statusOf(l, now)) && checkEligibility(hotel, l).eligible)
+      .filter(
+        (l) =>
+          LIVE_STATUSES.has(this.statusOf(l, now)) &&
+          checkEligibility(hotel, l).eligible &&
+          this.availableRooms(hotel, l).length > 0,
+      )
       .sort((a, b) => a.biddingEndsAt - b.biddingEndsAt)
       .map((l) => this.#hotelView(l, hotel, now));
 
@@ -262,7 +347,8 @@ export class Marketplace {
       .slice(0, 20)
       .map((l) => this.#hotelView(l, hotel, now));
 
-    return { hotel: privateHotel(hotel), live, won };
+    const night = marketWindow(now, this.config).nightDate ?? isoDate(localParts(now));
+    return { hotel: { ...privateHotel(hotel), roomsTonight: this.#roomsTonight(hotel, night) }, live, won };
   }
 
   // ---- Görünümler ----
@@ -286,6 +372,10 @@ export class Marketplace {
       acceptUntil: this.acceptUntil(listing),
       autoAccepted: Boolean(listing.autoAccepted),
       offers: this.activeOffers(listing.id).map(offerView),
+      // Oda başka misafire gittiği için geri çekilen teklifler (otel adıyla).
+      withdrawn: Object.values(this.#db.offers)
+        .filter((o) => o.listingId === listing.id && o.withdrawnReason === 'room_taken')
+        .map((o) => ({ hotelName: this.#db.hotels[o.hotelId].name, price: o.price })),
       acceptedOffer: accepted && {
         ...offerView(accepted),
         contact: hotelContact(this.#db.hotels[accepted.hotelId]),
@@ -311,7 +401,7 @@ export class Marketplace {
       myBest: mine ? (this.bestOffers(listing.id).get(mine.id) ?? []) : [],
       iAmLowest: Boolean(lowest && lowest.hotelId === hotel.id),
       priceCeiling: lowest ? lowest.price - this.config.minDecrementTL : listing.maxBudget,
-      rooms: suitableRooms(hotel, listing).map((r) => r.name),
+      rooms: this.availableRooms(hotel, listing).map((r) => r.name),
       won,
       autoAccepted: won && Boolean(listing.autoAccepted),
       acceptedOffer: won ? { price: accepted.price, roomName: accepted.roomName } : null,

@@ -1,4 +1,4 @@
-Copyright 2023 The Young Serif Project Authors (https://github.com/noirblancrouge/YoungSerif)
+Copyright 2020 The Anybody Project Authors (https://github.com/Etcetera-Type-Co/Anybody)
 Copyright 2023 The Ysabeau Project Authors (https://github.com/CatharsisFonts/Ysabeau)
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
