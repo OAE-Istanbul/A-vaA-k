@@ -78,11 +78,6 @@ export function validateListingInput(input, config) {
   const roomCount = integer(input.roomCount ?? 1, 'Oda sayısı', 1, config.maxRooms);
   checkGroup(group, adults, children, roomCount);
 
-  const durationMinutes = integer(input.durationMinutes, 'İhale süresi', 1, 24 * 60);
-  if (!config.auctionDurations.includes(durationMinutes)) {
-    throw new MarketError(`İhale süresi ${config.auctionDurations.join(', ')} dakikadan biri olmalı.`);
-  }
-
   const noBudget = input.maxBudget == null || input.maxBudget === '';
   return {
     group,
@@ -95,7 +90,8 @@ export function validateListingInput(input, config) {
     hotelTypes: subsetOf(input.hotelTypes, HOTEL_TYPES, 'otel tipi'),
     amenities: subsetOf(input.amenities, AMENITIES, 'olanak'),
     maxBudget: noBudget ? null : integer(input.maxBudget, 'Bütçe üst sınırı', 1, 1_000_000),
-    durationMinutes,
+    // Süre sabittir; istemcinin gönderdiği değer dikkate alınmaz.
+    durationMinutes: config.auctionMinutes,
     note: text(input.note, 'Not', 500),
   };
 }

@@ -183,20 +183,16 @@ export function sparkle(node) {
   }
 }
 
-/** Ana düğmeler imleci hafifçe izler, kartlar imlece göre hafifçe eğilir. */
+/** Düğmelerde ikinci renk imlecin girdiği noktadan açılır, kartlar imlece göre hafifçe eğilir. */
 export function pointerEffects() {
   if (reduced() || !window.matchMedia('(hover: hover)').matches) return;
-  let magnet = null;
   let tilt = null;
   document.addEventListener('pointermove', (event) => {
-    const m = event.target.closest('.dugme.ana, .menu-cikis');
-    if (magnet && magnet !== m) magnet.style.translate = '';
-    magnet = m;
-    if (m) {
-      const r = m.getBoundingClientRect();
-      const dx = ((event.clientX - r.left) / r.width - 0.5) * 10;
-      const dy = ((event.clientY - r.top) / r.height - 0.5) * 8;
-      m.style.translate = `${dx.toFixed(1)}px ${dy.toFixed(1)}px`;
+    const button = event.target.closest('.dugme');
+    if (button) {
+      const r = button.getBoundingClientRect();
+      button.style.setProperty('--mx', `${(((event.clientX - r.left) / r.width) * 100).toFixed(1)}%`);
+      button.style.setProperty('--my', `${(((event.clientY - r.top) / r.height) * 100).toFixed(1)}%`);
     }
     const t = event.target.closest('.teklif, .ilan-kart, .kapi');
     if (tilt && tilt !== t) {

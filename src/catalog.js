@@ -35,7 +35,6 @@ export const GUEST_GROUPS = Object.freeze({
 export const BEST_CATEGORIES = Object.freeze({
   price: 'En iyi fiyat',
   amenities: 'En çok olanak',
-  value: 'Fiyat/performans',
 });
 
 // İstanbul'un bölgeleri. Alıcı bir ya da birkaç bölge seçer; seçmezse tüm İstanbul.

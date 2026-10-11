@@ -47,7 +47,6 @@ export const listingInput = (overrides = {}) => ({
   hotelTypes: [],
   amenities: [],
   maxBudget: null,
-  durationMinutes: 30,
   note: '',
   ...overrides,
 });

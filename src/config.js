@@ -9,7 +9,8 @@ export const defaultConfig = Object.freeze({
   marketCloses: env.KAPANIS_SAATI ?? '02:00',
   // Yeni teklif, mevcut en düşük tekliften en az bu kadar düşük olmalı.
   minDecrementTL: Number(env.MIN_DUSUS_TL ?? 50),
-  auctionDurations: [15, 30, 45, 60],
+  // Her ilan sabit süre teklif alır.
+  auctionMinutes: 30,
   // Pazarın kapanmasına bundan az kaldıysa yeni ilan açılmaz.
   minAuctionMinutes: 5,
   // Son dakikalarda gelen teklif süreyi bu kadar uzatır (son saniye kapışmasını önler).

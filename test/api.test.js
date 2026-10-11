@@ -40,7 +40,7 @@ test('alıcıdan otele uçtan uca akış', async () => {
   const listing = await call('/api/listings', {
     method: 'POST',
     token: buyer.data.token,
-    body: { group: 'evli_cift', adults: 2, children: 0, nights: 1, arrivalTime: '23:00', amenities: ['jakuzi'], durationMinutes: 30 },
+    body: { group: 'evli_cift', adults: 2, children: 0, nights: 1, arrivalTime: '23:00', amenities: ['jakuzi'] },
   });
   assert.equal(listing.status, 200, listing.data.error);
 

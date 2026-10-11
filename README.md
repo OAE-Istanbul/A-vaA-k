@@ -11,7 +11,7 @@ Sistem her akşam 18:00'de açılır, oteller 02:00'ye kadar teklif verir. Amaç
 - Alıcı bir ya da birkaç bölge seçer (Sultanahmet, Beyoğlu, Beşiktaş, Şişli, Sarıyer, Kadıköy, Üsküdar, Beykoz, Adalar, Şile ve Ağva); seçmezse tüm İstanbul.
 - Alıcı misafir profilini (evli çift, çift, aile, arkadaş grubu, tek kişi), yetişkin ve çocuk sayısını, kaç gece kalacağını, tahmini varış saatini, istediği otel tiplerini ve olmazsa olmaz olanakları girer. Bütçe üst sınırı ve not isteğe bağlıdır.
 - Oda sayısı isteğe bağlıdır (varsayılan 1, en fazla 4). Çift ve tek kişi ilanları tek odalıdır; her odada en az bir yetişkin kalmalıdır.
-- Teklif süresi 15, 30, 45 ya da 60 dakikadır ve pazarın kapanışını aşamaz. Kapanışa 5 dakikadan az kala ilan açılmaz.
+- Her ilan sabit 30 dakika teklif alır; süre pazarın kapanışını aşamaz. Kapanışa 5 dakikadan az kala ilan açılmaz.
 - Bir alıcının aynı anda tek açık ilanı olur. Alıcı ilanını iptal edebilir.
 
 **Uygunluk (otel)**
@@ -28,7 +28,6 @@ Sistem her akşam 18:00'de açılır, oteller 02:00'ye kadar teklif verir. Amaç
 - Teklif veren her otel alıcının isteklerini zaten karşıladığı için alıcı, tüm teklifler yerine öne çıkanlardan seçer:
   - En iyi fiyat: en düşük teklif.
   - En çok olanak: en fazla olanağı sunan otelin teklifi.
-  - Fiyat/performans: lira başına en çok olanak.
   Aynı teklif birden fazla kategoride öne çıkabilir; diğer teklifler listede görünür ama seçilemez.
 - Alıcı teklif süresi içinde ya da süre bittikten sonraki 5 dakika içinde öne çıkanlardan birini kabul eder.
 - 5 dakika içinde seçim yapmazsa en iyi fiyat otomatik kabul edilir. Hiç teklif yoksa ilan sona erer.
@@ -64,14 +63,15 @@ Gündüz denemek için `npm run demo` kullanın. Demo modunda saat 18:05'ten ba�
 
 Palet lacivert, Türk kırmızısı ve beyaz.
 
-- **Menü:** Gece laciverti kapsül, sayfa kayarken üstte kalır; pazarın açık olup olmadığını ve kalan süreyi gösterir.
+- **Menü:** Gece laciverti kapsül, sayfa kayarken üstte kalır; pazarın açık olup olmadığını ve kalan süreyi yazıyla gösterir (yanıp sönen canlı işareti yok).
 - **Gökyüzü:** Sistem açıkken gece; önde İstanbul silüeti (camiler, minareler, Galata Kulesi), ay açılıştan kapanışa ilerler, kayan yıldız ve martılar geçer. Kapalıyken gündüz.
 - **Boğaz:** Sayfanın ortasından geçer; kuzey ucu beyaz sayfada biter, güney ucu sayfanın altında Marmara'ya açılır; sol kıyı Avrupa, sağ kıyı Asya. Kıvrımlar gerçek Boğaz profilinden (Büyükdere genişliği, Rumeli Hisarı'ndaki en dar yer). Köprüler gerçek sırasıyla: Yavuz Sultan Selim (eğik askılı), Fatih Sultan Mehmet ve 15 Temmuz Şehitler (asma). Güneyde Kız Kulesi, suda iki yönde giden vapurlar. Akıntı gerçekte olduğu gibi kuzeyden güneye akar, kaydırınca hızlanır.
 - **İlanınız:** Açık ilanınız Boğaz'da "İlanınız" etiketli kırmızı bir balık olarak yüzer; ilan bırakırken balık düğmeden sıçrayıp suya dalar.
 - **Marmara (sayfanın altı):** Adalar, martılar; Sık sorulanlar, yasal metinler (taslak, yayından önce hukukçu onayı gerekir) ve iletişim formu (`POST /api/contact`).
 - **Kişiler ve odalar:** Kelime yerine figürlerle: yetişkin mavi piyon, çocuk kırmızı küçük figür, her oda ayrı kutu.
-- **Hareketler:** Basınca su halkası, seçimlerde kıvılcım, ana düğmeler imleci hafifçe izler ve üstünden ışık süzülür, kartlar imlece göre eğilir, ekran değişince kartlar sırayla yükselir; teklif fiyatı uçup "en düşük" kutusuna girer; anlaşmada laleler saçılır; yeni teklif Boğaz tarafından süzülür. Hareketi azalt ayarında hiçbiri oynamaz.
-- **Yazı tipleri:** Başlıklarda geniş ve kalın Anybody, metinde Ysabeau Infant; ikisi de projede barındırılır (SIL OFL) ve Türkçe karakterleri tam içerir.
+- **Hareketler:** Basınca su halkası, seçimlerde kıvılcım, düğmelerin ikinci rengi imlecin girdiği noktadan daire gibi açılır, kartlar imlece göre eğilir, ekran değişince kartlar sırayla yükselir; teklif fiyatı uçup "en düşük" kutusuna girer; anlaşmada laleler saçılır; yeni teklif Boğaz tarafından süzülür. Hareketi azalt ayarında hiçbiri oynamaz.
+- **Yazı tipleri:** Başlıklarda yüksek kontrastlı serif Gloock, metin ve düğmelerde Funnel Sans, fiyat, sayaç ve küçük etiketlerde Martian Mono. Üçü de projede barındırılır (SIL OFL) ve Türkçe karakterleri tam içerir.
+- **Düğmeler:** Klavye tuşu gibi; altta koyu kenar, üstüne gelince tuş kalkar, basınca kenarın içine çöker. Ana düğmede kırmızıdan laciverde dairesel geçiş ve sağda ok pulu (ok dışarı kayar, yenisi girer). Ana CTA iki satırlı: balık pulu, "İlanı Boğaz'a bırakın" ve altında 30 dakikalık süre. Seçimler ince çerçeveli; seçilince lacivert olur, köşede kırmızı onay belirir. Hızlı fiyat düğmeleri kesik çizgili bilet gibi.
 - **İkonlar:** `public/icons.js` içinde elle çizildi.
 
 ## Ayarlar
@@ -132,7 +132,7 @@ test/             node:test ile testler
 ## Netleştirilmesi gereken noktalar
 
 1. Pazar 02:00'de kapanıyor. Daha geç ya da daha erken mi olmalı?
-2. Üçüncü öne çıkan kategori şimdilik "Fiyat/performans" (lira başına olanak sayısı). Yerine ya da yanına puan, denize yakınlık gibi başka bir "en iyi" eklenebilir; otellerden bu veri toplanmalı.
+2. Öne çıkan iki kategori var: en iyi fiyat ve en çok olanak. Puan, denize yakınlık gibi yeni bir "en iyi" istenirse otellerden bu veri toplanmalı.
 3. Çok odalı ilanlarda tüm odalar aynı tipten. Karışık oda (bir aile odası + bir çift odası) istenirse eklenebilir.
 4. Oda stoku şimdilik otelin toplam oda sayısından başlıyor ve yalnızca bu uygulamadaki anlaşmalarla azalıyor. Gerçekte otelin başka kanallardan gelen rezervasyonları da var; otel her akşam o gece boş kalan oda sayısını girebilmeli.
 5. Evli çift seçen alıcıdan girişte belge istenip istenmeyeceği otelin politikası; uygulamada sadece profil eşleşmesi var.

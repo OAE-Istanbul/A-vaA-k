@@ -76,7 +76,7 @@ function people({ adults, children, roomCount = 1 }) {
   return roomCount > 1 ? `${guests}, ${roomCount} oda` : guests;
 }
 
-// ["amenities", "value"] -> "“En çok olanak” ve “Fiyat/performans” kategorilerinde"
+// ["price", "amenities"] -> "“En iyi fiyat” ve “En çok olanak” kategorilerinde"
 function bestPhrase(categories) {
   const names = categories.map((c) => `“${label('bestCategories', c)}”`).join(' ve ');
   return `${names} ${categories.length > 1 ? 'kategorilerinde' : 'kategorisinde'}`;
@@ -289,8 +289,8 @@ function renderMenu() {
   const m = state.market;
   const { marketOpens } = state.meta.rules;
   $('#menu-durum').innerHTML = m.open
-    ? `<span class="nokta"></span><b>Sistem açık</b><span class="menu-sure">kapanışa <strong data-until="${m.closesAt}"></strong></span>`
-    : `<span class="nokta kapali"></span><b>${clockTR(marketOpens)}'de açılıyor</b><span class="menu-sure"><strong data-until="${m.opensAt}"></strong></span>`;
+    ? `<b>Sistem açık</b><span class="menu-sure">kapanışa <strong data-until="${m.closesAt}"></strong></span>`
+    : `<b>${clockTR(marketOpens)}'de açılıyor</b><span class="menu-sure"><strong data-until="${m.opensAt}"></strong></span>`;
   $('#session-box').innerHTML = state.session
     ? `<span class="oturum-ad"><i>${esc(state.session.name.slice(0, 1))}</i><span>${esc(state.session.name)}</span></span><button class="menu-cikis" data-action="logout">Çıkış</button>`
     : '';
@@ -407,7 +407,7 @@ function crossing(from, to, caption) {
 
 function statusPill(status) {
   const map = {
-    open: ['Teklif alıyor', 'canli'],
+    open: ['Teklif alıyor', 'acik'],
     awaiting_choice: ['Seçiminizi bekliyor', 'bekliyor'],
     accepted: ['Anlaşıldı', 'tamam'],
     cancelled: ['İptal edildi', 'soluk'],
@@ -444,7 +444,7 @@ function landingView() {
         <ol class="adimlar">
           <li><span>${icon('balik')}</span><div><b>İlanınızı Boğaz'a bırakın</b>Hangi semtte, kaç kişi, ne zaman varırsınız, neler olmazsa olmaz?</div></li>
           <li><span>${icon('price')}</span><div><b>Oteller fiyat kırsın</b>Yalnızca size uyan oteller görür. Her yeni teklif en az ${tl(rules.minDecrementTL)} daha ucuz.</div></li>
-          <li><span>${icon('value')}</span><div><b>En iyisini seçin</b>En iyi fiyat, en çok olanak, fiyat/performans. ${rules.acceptGraceMinutes} dakikada seçmezseniz en iyi fiyat sizin.</div></li>
+          <li><span>${icon('value')}</span><div><b>En iyisini seçin</b>Oteller ${rules.auctionMinutes} dakika teklif verir. En iyi fiyat ya da en çok olanak; ${rules.acceptGraceMinutes} dakikada seçmezseniz en iyi fiyat sizin.</div></li>
         </ol>
       </div>
       <div class="kiyi sag kapilar">
@@ -496,9 +496,6 @@ function newListingForm() {
         <div class="secimler">${side.regions.map((r) => chip('regions', r, catalog.regions[r], { iconName: 'konum' })).join('')}</div>
       </div>`)
     .join('');
-  const durations = rules.auctionDurations
-    .map((d) => `<label class="secim yalin"><input type="radio" name="durationMinutes" value="${d}"${d === 30 ? ' checked' : ''}><span><b>${d} dk</b></span></label>`)
-    .join('');
   return `
     <div class="kiyilar">
       <form class="kiyi sol ilan-formu" id="ilan-formu" data-key="new-listing">
@@ -536,17 +533,19 @@ function newListingForm() {
           <div class="secimler">${amenities}</div>
         </fieldset>
         <fieldset class="tas">
-          <legend>Bütçe ve süre</legend>
+          <legend>Bütçe</legend>
           <div class="butce-sure">
             <label class="alan">En fazla ödeyeceğiniz toplam <span class="tl-alan"><input type="number" name="maxBudget" min="1" inputmode="numeric" placeholder="İsteğe bağlı"><i>TL</i></span></label>
-            <div class="alan"><span>Oteller ne kadar süre teklif versin?</span><div class="secimler">${durations}</div></div>
           </div>
           <label class="alan">Otellere notunuz <textarea name="note" maxlength="500" rows="2" placeholder="Örneğin yıl dönümü, geç varış, bebek yatağı"></textarea></label>
         </fieldset>
       </form>
       <aside class="kiyi sag taslak-kiyi">
         <div class="taslak tas koyu" id="taslak"></div>
-        <button class="dugme ana iri gemi-dugme" form="ilan-formu">${icon('balik')}İlanı Boğaz'a bırakın</button>
+        <button class="dugme ana iri gemi-dugme" form="ilan-formu">
+          <span class="cta-ik">${icon('balik')}</span>
+          <span class="cta-yazi"><b>İlanı Boğaz'a bırakın</b><small>Oteller ${rules.auctionMinutes} dakika teklif verir</small></span>
+        </button>
       </aside>
     </div>`;
 }
@@ -569,7 +568,6 @@ function syncDraft() {
     hotelTypes: fd.getAll('hotelTypes'),
     amenities: fd.getAll('amenities'),
     maxBudget: fd.get('maxBudget') ? Number(fd.get('maxBudget')) : null,
-    durationMinutes: Number(fd.get('durationMinutes')),
   };
   // Yeni eklenen kişi figürü zıplayarak gelsin.
   const before = state.draftGuests;
@@ -583,7 +581,7 @@ function syncDraft() {
     ${guestIcons(draft, { size: 'iri', fresh })}
     <div class="kalislar">${stay(draft)}</div>
     ${requestList(draft)}
-    <p class="taslak-alt">${draft.maxBudget ? `En fazla <b>${tl(draft.maxBudget)}</b> · ` : ''}Oteller <b>${draft.durationMinutes} dakika</b> teklif verir</p>`;
+    ${draft.maxBudget ? `<p class="taslak-alt">En fazla <b>${tl(draft.maxBudget)}</b></p>` : ''}`;
 }
 
 function buyerListing(l) {
@@ -861,7 +859,6 @@ const submitHandlers = {
         hotelTypes: fd.getAll('hotelTypes'),
         amenities: fd.getAll('amenities'),
         maxBudget: fd.get('maxBudget') ? Number(fd.get('maxBudget')) : null,
-        durationMinutes: Number(fd.get('durationMinutes')),
         note: fd.get('note'),
       },
     });

@@ -17,7 +17,6 @@ export const formatTL = (n) => `${new Intl.NumberFormat('tr-TR').format(n)} TL`;
 const BEST_SCORES = {
   price: (offer) => -offer.price,
   amenities: (offer, hotel) => hotel.amenities.length,
-  value: (offer, hotel) => hotel.amenities.length / offer.price,
 };
 
 /**

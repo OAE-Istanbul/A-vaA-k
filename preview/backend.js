@@ -51,7 +51,7 @@ function seedScenario() {
   const ayse = market.createListing(buyerId('ayse'), {
     group: 'evli_cift', adults: 2, children: 0, roomCount: 1, nights: 1, arrivalTime: '22:30',
     regions: ['beyoglu', 'besiktas', 'uskudar'], hotelTypes: [], amenities: ['bogaz_manzarasi'],
-    maxBudget: 5000, durationMinutes: 15, note: 'Yıl dönümümüz, geç varabiliriz.',
+    maxBudget: 5000, note: 'Yıl dönümümüz, geç varabiliriz.',
   });
   market.placeOffer('ortakoy-kiyi', ayse.id, { price: 4200, roomName: 'Standart oda', note: 'Köprü manzaralı oda' });
   market.placeOffer('galata-cati', ayse.id, { price: 3950, roomName: 'Çift oda', note: 'Geç çıkış hediye' });
@@ -60,7 +60,7 @@ function seedScenario() {
   // Mert: 4 arkadaş, 2 oda, Kadıköy'de, kahvaltı şart. Moda Pansiyon ve Kadıköy Rıhtım teklif verebilir.
   market.createListing(buyerId('mert'), {
     group: 'arkadas', adults: 4, children: 0, roomCount: 2, nights: 1, arrivalTime: '23:15',
-    regions: ['kadikoy'], hotelTypes: [], amenities: ['kahvalti'], maxBudget: null, durationMinutes: 30, note: '',
+    regions: ['kadikoy'], hotelTypes: [], amenities: ['kahvalti'], maxBudget: null, note: '',
   });
 }
 

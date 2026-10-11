@@ -25,7 +25,7 @@ export function createApi({ market, auth, config }) {
       marketOpens: config.marketOpens,
       marketCloses: config.marketCloses,
       minDecrementTL: config.minDecrementTL,
-      auctionDurations: config.auctionDurations,
+      auctionMinutes: config.auctionMinutes,
       acceptGraceMinutes: config.acceptGraceMinutes,
       softCloseMinutes: config.softCloseMinutes,
       maxNights: config.maxNights,
