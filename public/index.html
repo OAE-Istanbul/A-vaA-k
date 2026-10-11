@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0d1420">
+  <title>Ağva Gece Teklifleri</title>
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <div class="brand">
+        <span class="brand-name" id="app-name">Ağva</span>
+        <span class="brand-sub">gece teklifleri</span>
+      </div>
+      <div id="session-box"></div>
+    </div>
+  </header>
+  <div id="market-banner" class="banner"></div>
+  <main id="view" class="wrap">
+    <p class="muted loading">Yükleniyor…</p>
+  </main>
+  <footer class="wrap footer">
+    <p class="muted">Fiyatlar konaklamanın toplam tutarıdır. Bu sürüm demo amaçlıdır, gerçek ödeme ve kimlik doğrulama içermez.</p>
+  </footer>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>

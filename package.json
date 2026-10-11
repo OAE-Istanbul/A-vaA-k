@@ -1,0 +1,15 @@
+{
+  "name": "agva-gece-teklifleri",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Ağva otelleri için ters açık artırma: alıcı ilan açar, uygun oteller fiyat kırarak teklif verir.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "demo": "node src/index.js --demo",
+    "test": "node --test"
+  }
+}

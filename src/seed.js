@@ -1,0 +1,94 @@
+import { hashPin } from './auth.js';
+
+export const DEMO_PIN = '1234';
+
+// Kurgusal örnek oteller. Gerçek işletmelerle ilgisi yoktur.
+const HOTELS = [
+  {
+    id: 'yesilvadi',
+    name: 'Yeşilvadi Bungalov',
+    type: 'bungalov',
+    description: 'Dere kenarında, şömineli ahşap bungalovlar.',
+    amenities: ['kahvalti', 'somine', 'jakuzi', 'dere_manzarasi', 'otopark', 'mangal', 'wifi'],
+    acceptedGroups: ['evli_cift', 'aile'],
+    rooms: [
+      { name: 'Jakuzili bungalov', capacity: 2 },
+      { name: 'Aile bungalovu', capacity: 4 },
+    ],
+    phone: '0555 000 00 01',
+    address: 'Ağva, Şile / İstanbul',
+  },
+  {
+    id: 'kayalar',
+    name: 'Kayalar Butik Otel',
+    type: 'butik_otel',
+    description: 'Denize yürüme mesafesinde, havuzlu butik otel.',
+    amenities: ['kahvalti', 'havuz', 'deniz_manzarasi', 'otopark', 'klima', 'wifi'],
+    acceptedGroups: ['evli_cift', 'cift', 'aile', 'arkadas', 'tek'],
+    rooms: [
+      { name: 'Standart oda', capacity: 2 },
+      { name: 'Deniz manzaralı suit', capacity: 3 },
+    ],
+    phone: '0555 000 00 02',
+    address: 'Ağva, Şile / İstanbul',
+  },
+  {
+    id: 'camlik',
+    name: 'Çamlık Pansiyon',
+    type: 'pansiyon',
+    description: 'Ev sıcaklığında, bahçeli ve hayvan dostu pansiyon.',
+    amenities: ['kahvalti', 'ozel_bahce', 'evcil_hayvan', 'otopark', 'wifi', 'mangal'],
+    acceptedGroups: ['evli_cift', 'cift', 'aile', 'arkadas', 'tek'],
+    rooms: [
+      { name: 'Çift kişilik oda', capacity: 2 },
+      { name: 'Dört kişilik oda', capacity: 4 },
+    ],
+    phone: '0555 000 00 03',
+    address: 'Ağva, Şile / İstanbul',
+  },
+  {
+    id: 'orman-ici',
+    name: 'Orman İçi Dağ Evi',
+    type: 'dag_evi',
+    description: 'Ormanın içinde, tamamı size ait şömineli dağ evi.',
+    amenities: ['somine', 'jakuzi', 'ozel_bahce', 'mangal', 'otopark', 'evcil_hayvan'],
+    acceptedGroups: ['evli_cift', 'cift', 'aile', 'arkadas'],
+    rooms: [{ name: 'Tüm ev', capacity: 6 }],
+    phone: '0555 000 00 04',
+    address: 'Ağva, Şile / İstanbul',
+  },
+  {
+    id: 'sakin-tiny',
+    name: 'Sakin Tiny House',
+    type: 'tiny_house',
+    description: 'İki kişilik, jakuzili, dere manzaralı tiny house.',
+    amenities: ['jakuzi', 'dere_manzarasi', 'ozel_bahce', 'klima', 'wifi', 'kahvalti'],
+    acceptedGroups: ['evli_cift', 'cift'],
+    rooms: [{ name: 'Tiny house', capacity: 2 }],
+    phone: '0555 000 00 05',
+    address: 'Ağva, Şile / İstanbul',
+  },
+  {
+    id: 'kumsal',
+    name: 'Kumsal Otel',
+    type: 'otel',
+    description: 'Sahile sıfır, kahvaltı dahil klasik otel.',
+    amenities: ['kahvalti', 'deniz_manzarasi', 'havuz', 'otopark', 'klima', 'wifi'],
+    acceptedGroups: ['evli_cift', 'aile', 'tek'],
+    rooms: [
+      { name: 'Standart oda', capacity: 2 },
+      { name: 'Aile odası', capacity: 4 },
+    ],
+    phone: '0555 000 00 06',
+    address: 'Ağva, Şile / İstanbul',
+  },
+];
+
+/** Hiç otel yoksa örnek otelleri ekler (hepsinin PIN'i DEMO_PIN). */
+export function seedHotels(store) {
+  if (Object.keys(store.data.hotels).length > 0) return;
+  for (const hotel of HOTELS) {
+    store.data.hotels[hotel.id] = { ...hotel, pinHash: hashPin(DEMO_PIN) };
+  }
+  store.save();
+}
