@@ -114,3 +114,100 @@ export function springIn(node) {
     { duration: 520, easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)' },
   );
 }
+
+/** İlan bırakılınca balık düğmeden sıçrar, Boğaz'a dalar; suda halkalar yayılır. */
+export function launchFish(from, fishIcon) {
+  if (reduced()) return;
+  const fish = floating('ziplayan-balik', fishIcon);
+  const x = from.left + from.width / 2;
+  const y = from.top + from.height / 2;
+  const tx = window.innerWidth / 2;
+  const ty = window.innerHeight * 0.58;
+  const peak = Math.min(y, ty) - 160;
+  fish.animate(
+    [
+      { transform: at(x, y, 'scale(0.4) rotate(-40deg)'), opacity: 0 },
+      { transform: at(x + (tx - x) * 0.2, peak + 60, 'scale(1.4) rotate(-25deg)'), opacity: 1, offset: 0.25 },
+      { transform: at((x + tx) / 2, peak, 'scale(1.5) rotate(0deg)'), offset: 0.5 },
+      { transform: at(tx, ty, 'scale(0.9) rotate(60deg)'), opacity: 1, offset: 0.92 },
+      { transform: at(tx, ty + 10, 'scale(0.6) rotate(70deg)'), opacity: 0 },
+    ],
+    { duration: 1300, easing: 'cubic-bezier(0.33, 0, 0.4, 1)' },
+  ).onfinish = () => {
+    fish.remove();
+    splash(tx, ty);
+  };
+}
+
+/** Suya düşüş: iç içe genişleyen halkalar ve sıçrayan damlalar. */
+export function splash(x, y) {
+  if (reduced()) return;
+  for (let i = 0; i < 3; i++) {
+    const ring = floating('su-halkasi', '');
+    ring.animate(
+      [{ transform: at(x, y, 'scale(0.1)'), opacity: 0.9 }, { transform: at(x, y, 'scale(1)'), opacity: 0 }],
+      { duration: 900, delay: i * 160, easing: 'ease-out', fill: 'backwards' },
+    ).onfinish = () => ring.remove();
+  }
+  for (let i = 0; i < 8; i++) {
+    const drop = floating('su-damlasi', '');
+    const dx = (i - 3.5) * 9;
+    drop.animate(
+      [
+        { transform: at(x, y), opacity: 1 },
+        { transform: at(x + dx, y - 40 - Math.random() * 30), opacity: 1, offset: 0.45 },
+        { transform: at(x + dx * 1.4, y + 10), opacity: 0 },
+      ],
+      { duration: 700, easing: 'cubic-bezier(0.2, 0.7, 0.4, 1)' },
+    ).onfinish = () => drop.remove();
+  }
+}
+
+/** Seçim taşına dokununca küçük kıvılcımlar saçılır. */
+export function sparkle(node) {
+  if (reduced() || !node) return;
+  const r = node.getBoundingClientRect();
+  const x = r.left + r.width / 2;
+  const y = r.top + r.height / 2;
+  for (let i = 0; i < 8; i++) {
+    const dot = floating(`kivilcim k${i % 2}`, '');
+    const angle = (Math.PI * 2 * i) / 8;
+    const d = Math.max(r.width, r.height) / 2 + 14;
+    dot.animate(
+      [
+        { transform: at(x + Math.cos(angle) * d * 0.5, y + Math.sin(angle) * d * 0.5, 'scale(1)'), opacity: 1 },
+        { transform: at(x + Math.cos(angle) * d, y + Math.sin(angle) * d, 'scale(0)'), opacity: 0 },
+      ],
+      { duration: 520, easing: 'cubic-bezier(0.2, 0.7, 0.3, 1)' },
+    ).onfinish = () => dot.remove();
+  }
+}
+
+/** Ana düğmeler imleci hafifçe izler, kartlar imlece göre hafifçe eğilir. */
+export function pointerEffects() {
+  if (reduced() || !window.matchMedia('(hover: hover)').matches) return;
+  let magnet = null;
+  let tilt = null;
+  document.addEventListener('pointermove', (event) => {
+    const m = event.target.closest('.dugme.ana, .menu-cikis');
+    if (magnet && magnet !== m) magnet.style.translate = '';
+    magnet = m;
+    if (m) {
+      const r = m.getBoundingClientRect();
+      const dx = ((event.clientX - r.left) / r.width - 0.5) * 10;
+      const dy = ((event.clientY - r.top) / r.height - 0.5) * 8;
+      m.style.translate = `${dx.toFixed(1)}px ${dy.toFixed(1)}px`;
+    }
+    const t = event.target.closest('.teklif, .ilan-kart, .kapi');
+    if (tilt && tilt !== t) {
+      tilt.style.removeProperty('--rx');
+      tilt.style.removeProperty('--ry');
+    }
+    tilt = t;
+    if (t) {
+      const r = t.getBoundingClientRect();
+      t.style.setProperty('--ry', `${(((event.clientX - r.left) / r.width - 0.5) * 5).toFixed(2)}deg`);
+      t.style.setProperty('--rx', `${(-((event.clientY - r.top) / r.height - 0.5) * 4).toFixed(2)}deg`);
+    }
+  });
+}

@@ -10,7 +10,7 @@ import { Marketplace } from '../src/market.js';
 import { SAMPLE_HOTELS } from '../src/sample-hotels.js';
 
 const MINUTE = 60_000;
-const START_TIME = '21:05';
+const START_TIME = '18:05';
 const DEMO_PIN = '1234';
 
 // Gecelik başlangıç fiyatları (botların ilk teklifi için kaba tahmin).
@@ -35,7 +35,7 @@ const bots = { enabled: true, floors: new Map(), viewerHotelId: null };
 // ---- Senaryo ----
 
 function resetData() {
-  store.data = { buyers: {}, hotels: {}, listings: {}, offers: {}, sessions: {} };
+  store.data = { buyers: {}, hotels: {}, listings: {}, offers: {}, sessions: {}, messages: {} };
   for (const hotel of SAMPLE_HOTELS) store.data.hotels[hotel.id] = { ...hotel, pinHash: DEMO_PIN };
   clockState.offset = localToEpoch(localParts(Date.now()), parseClock(START_TIME)) - Date.now();
   bots.floors.clear();

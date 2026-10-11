@@ -2,7 +2,7 @@ import { isoDate, localParts, marketWindow } from './clock.js';
 import { checkEligibility, roomCount, suitableRooms } from './eligibility.js';
 import { MarketError } from './errors.js';
 import { newId } from './ids.js';
-import { validateListingInput, validateOfferInput } from './validation.js';
+import { text, validateListingInput, validateOfferInput } from './validation.js';
 
 const MINUTE = 60_000;
 const DAY = 24 * 60 * MINUTE;
@@ -191,10 +191,10 @@ export class Marketplace {
     this.settle(now);
     const market = marketWindow(now, this.config);
     if (!market.open) {
-      throw new MarketError(`Pazar her akşam ${this.config.marketOpens}'de açılır.`, 403);
+      throw new MarketError(`Sistem her akşam ${this.config.marketOpens.replace(':', '.')}'de açılır.`, 403);
     }
     if (market.closesAt - now < this.config.minAuctionMinutes * MINUTE) {
-      throw new MarketError('Bu gecenin pazarı kapanmak üzere, yeni ilan açılamıyor.', 403);
+      throw new MarketError('Bu gece için sistem kapanmak üzere, yeni ilan açılamıyor.', 403);
     }
     if (this.#listingsOf(buyerId).some((l) => LIVE_STATUSES.has(this.statusOf(l, now)))) {
       throw new MarketError('Zaten açık bir ilanınız var.', 409);
@@ -266,6 +266,21 @@ export class Marketplace {
       .sort((a, b) => b.createdAt - a.createdAt)
       .slice(0, 20)
       .map((l) => this.#buyerView(l, now));
+  }
+
+  /** Alt bilgideki iletişim formu. */
+  saveContact(input = {}) {
+    const message = {
+      id: newId(),
+      name: text(input.name, 'Ad', 60, { required: true }),
+      reply: text(input.reply, 'E-posta ya da telefon', 80, { required: true }),
+      message: text(input.message, 'Mesaj', 1000, { required: true }),
+      createdAt: this.clock(),
+    };
+    this.#db.messages ??= {};
+    this.#db.messages[message.id] = message;
+    this.store.save();
+    return { ok: true };
   }
 
   // ---- Otel işlemleri ----

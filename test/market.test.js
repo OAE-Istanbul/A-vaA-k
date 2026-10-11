@@ -5,9 +5,9 @@ import { hotel, istanbul, listingInput, MINUTE, setup } from './helpers.js';
 
 const rejects = (fn, pattern) => assert.throws(fn, (err) => err instanceof MarketError && pattern.test(err.message));
 
-test('21:00 öncesi ilan açılamaz', () => {
-  const { market } = setup({ start: istanbul(2026, 10, 11, 20, 30) });
-  rejects(() => market.createListing('u1', listingInput()), /21:00'de açılır/);
+test('18:00 öncesi ilan açılamaz', () => {
+  const { market } = setup({ start: istanbul(2026, 10, 11, 17, 30) });
+  rejects(() => market.createListing('u1', listingInput()), /18\.00'de açılır/);
 });
 
 test('ilan bu gecenin tarihiyle ve ihale süresiyle açılır', () => {
@@ -286,4 +286,10 @@ test('bölge seçimi doğrulanır ve otel akışına yansır', () => {
   assert.deepEqual(listing.regions, ['kadikoy']);
   assert.equal(market.hotelFeed('asya').live.length, 1);
   assert.equal(market.hotelFeed('avrupa').live.length, 0);
+});
+
+test('kaçamak en fazla 2 gece', () => {
+  const { market } = setup();
+  rejects(() => market.createListing('u1', listingInput({ nights: 3 })), /Gece sayısı/);
+  assert.equal(market.createListing('u1', listingInput({ nights: 2 })).nights, 2);
 });

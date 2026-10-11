@@ -435,7 +435,7 @@ textarea { resize: vertical; }
   background: var(--yuzey-2);
   color: var(--murekkep);
   cursor: pointer;
-  transition: transform 0.3s var(--yay), background-color 0.2s, box-shadow 0.3s;
+  transition: transform 0.3s var(--yay), background-color 0.2s, box-shadow 0.3s, translate 0.25s ease-out;
 }
 .dugme:hover { transform: translateY(-2px); }
 .dugme:active { transform: scale(0.93); transition-duration: 0.08s; }
@@ -641,7 +641,7 @@ textarea { resize: vertical; }
 .teklif-bas h2 { font-size: 1.8rem; margin: 0 0 4px; }
 .teklif-bas p { color: var(--soluk); }
 .teklif-listesi { list-style: none; padding: 0; margin: 0; display: grid; gap: 16px; }
-.teklif:hover { transform: translateY(-3px); }
+.teklif:hover { translate: 0 -3px; }
 .teklif-ust { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
 .damgalar { display: flex; flex-wrap: wrap; gap: 6px; }
 .damga { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px 5px 9px; border-radius: 999px; background: var(--koyu); color: var(--vurgu); font: 800 0.8rem var(--font-baslik); font-stretch: 112%; }
@@ -878,4 +878,172 @@ textarea { resize: vertical; }
   .secim.buyuk span { min-width: 96px; }
   .ozet-sayilar dd { font-size: 1rem; }
   .sayac { padding-left: 10px; }
+}
+
+/* ---- Daha canlı etkileşimler ---- */
+
+/* Kartlar imlece göre hafifçe eğilir (fx.js pointerEffects). */
+.teklif, .ilan-kart, .kapi {
+  transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transition: transform 0.3s ease-out, translate 0.35s var(--yay), box-shadow 0.35s;
+}
+
+/* Ana düğmede ışık süzülmesi. */
+.dugme.ana::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.35) 50%, transparent 70%);
+  transform: translateX(-120%);
+  pointer-events: none;
+}
+.dugme.ana:hover::after { animation: isik 0.9s ease-out; }
+
+/* Seçilen taştan halka yayılır. */
+.secim input:checked + span { box-shadow: 0 0 0 0 rgba(26, 86, 196, 0.5); animation: zipla 0.45s var(--yay), sec-halka 0.7s ease-out; }
+
+.kivilcim { position: fixed; left: 0; top: 0; z-index: 60; width: 7px; height: 7px; border-radius: 50%; pointer-events: none; }
+.kivilcim.k0 { background: var(--ana); }
+.kivilcim.k1 { background: var(--mavi); }
+
+/* Ekran değişince kartlar sırayla yükselir. */
+.giris-animasyonu .kiyi > * { animation: yuksel 0.7s var(--yay) both; }
+.giris-animasyonu .kiyi > *:nth-child(2) { animation-delay: 0.06s; }
+.giris-animasyonu .kiyi > *:nth-child(3) { animation-delay: 0.12s; }
+.giris-animasyonu .kiyi > *:nth-child(4) { animation-delay: 0.18s; }
+.giris-animasyonu .kiyi > *:nth-child(n + 5) { animation-delay: 0.24s; }
+.giris-animasyonu .kiyi.sag > * { animation-delay: 0.14s; }
+
+/* Boğaz'daki bizim balık ve ilan bırakırken sıçrayan balık. */
+.bizim-balik-govde path { fill: var(--ana); stroke: #fff; stroke-width: 1.6; stroke-linejoin: round; }
+.balik-goz { fill: #fff; }
+.balik-etiket rect { fill: #fff; stroke: var(--ana); stroke-width: 1.5; }
+.balik-etiket text { font: 800 10px var(--font-baslik); font-stretch: 115%; fill: var(--ana); }
+.ziplayan-balik, .su-halkasi, .su-damlasi { position: fixed; left: 0; top: 0; z-index: 60; pointer-events: none; }
+.ziplayan-balik .ik { width: 58px; height: 58px; fill: var(--ana); stroke: #fff; stroke-width: 1.2; filter: drop-shadow(0 10px 14px rgba(5, 20, 55, 0.35)); }
+.su-halkasi { width: 110px; height: 110px; border-radius: 50%; border: 3px solid #fff; }
+.su-damlasi { width: 7px; height: 7px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 2px var(--su); }
+
+/* Gökyüzünde kayan yıldız ve martılar. */
+.kayan-yildiz {
+  position: absolute;
+  top: 18%;
+  left: 70%;
+  width: 130px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.9), transparent);
+  transform: rotate(-20deg);
+  opacity: 0;
+  animation: kayan 9s ease-in 3s infinite;
+}
+.marti {
+  position: absolute;
+  width: 26px;
+  height: 12px;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 12'%3E%3Cpath d='M1 8q6-8 12 0q6-8 12 0' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 12'%3E%3Cpath d='M1 8q6-8 12 0q6-8 12 0' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  color: rgba(255, 255, 255, 0.85);
+  animation: marti-uc 26s linear infinite, kanat 0.9s ease-in-out infinite;
+}
+.gokyuzu .marti.m1 { top: 30%; animation-delay: -4s, 0s; }
+.gokyuzu .marti.m2 { top: 40%; width: 20px; animation-duration: 34s, 1.1s; animation-delay: -18s, 0.3s; }
+.kapali .marti { color: var(--koyu); }
+
+/* ---- Marmara: sayfanın altı denize açılır ---- */
+
+.marmara {
+  position: relative;
+  z-index: 1;
+  margin-top: 40px;
+  color: #fff;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='60' viewBox='0 0 120 60'%3E%3Cpath d='M10 18q8-6 16 0M60 10q6-4 12 0M84 40q8-6 16 0M30 48q6-4 12 0' fill='none' stroke='white' stroke-opacity='0.35' stroke-width='1.7' stroke-linecap='round'/%3E%3C/svg%3E") 0 0 / 120px 60px,
+    linear-gradient(180deg, var(--su) 0%, #1a4a95 55%, var(--koyu) 100%);
+  animation: dalga-ak 18s linear infinite;
+}
+.marmara::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -22px;
+  height: 24px;
+  background: var(--su);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='24' viewBox='0 0 120 24'%3E%3Cpath d='M0 14Q30 0 60 14T120 14V24H0z'/%3E%3C/svg%3E") repeat-x 0 0 / 120px 24px;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='24' viewBox='0 0 120 24'%3E%3Cpath d='M0 14Q30 0 60 14T120 14V24H0z'/%3E%3C/svg%3E") repeat-x 0 0 / 120px 24px;
+  animation: kenar-dalga 6s linear infinite;
+}
+.marmara-sahne { position: relative; height: 230px; overflow: hidden; }
+.marmara-sahne svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ada path { fill: #eef3fb; }
+.ada-ev rect { fill: var(--ana); }
+.ada-ad text { font: 800 11px var(--font-baslik); font-stretch: 120%; letter-spacing: 0.08em; fill: rgba(255, 255, 255, 0.85); text-anchor: middle; }
+.ada { animation: ada-salin 7s ease-in-out infinite; transform-origin: 50% 100%; }
+.marmara-sahne .marti { top: 22%; }
+.marmara-sahne .marti.m2 { top: 34%; width: 20px; animation-duration: 30s, 1.1s; animation-delay: -12s, 0.2s; }
+.marmara-sahne .marti.m3 { top: 16%; width: 16px; animation-duration: 40s, 0.8s; animation-delay: -25s, 0.5s; }
+
+.marmara-ic {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 10px 16px 30px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+.marmara-ic section { background: rgba(255, 255, 255, 0.08); border-radius: var(--tas-2); padding: 22px; backdrop-filter: blur(4px); }
+.marmara-ic h2 { font-size: 1.3rem; margin-bottom: 12px; }
+.marmara details { border-top: 1px solid rgba(255, 255, 255, 0.14); }
+.marmara details:first-of-type { border-top: 0; }
+.marmara summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  font: 700 0.98rem var(--font-baslik);
+  font-stretch: 108%;
+}
+.marmara summary::-webkit-details-marker { display: none; }
+.marmara summary::after {
+  content: '';
+  flex: none;
+  width: 14px;
+  height: 14px;
+  background: var(--vurgu);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M7 1v12M1 7h12' stroke='black' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M7 1v12M1 7h12' stroke='black' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  transition: transform 0.35s var(--yay);
+}
+.marmara details[open] summary::after { transform: rotate(135deg); }
+.marmara details p { margin: 0 0 12px; color: rgba(255, 255, 255, 0.82); animation: acil 0.35s var(--yay); }
+.taslak-not { font-size: 0.8rem; color: rgba(255, 255, 255, 0.55); margin: 10px 0 0; }
+.iletisim-formu { display: grid; gap: 12px; }
+.iletisim-formu .alan { color: rgba(255, 255, 255, 0.8); }
+.iletisim-formu input, .iletisim-formu textarea { background: rgba(255, 255, 255, 0.12); color: #fff; }
+.iletisim-formu input:focus, .iletisim-formu textarea:focus { box-shadow: 0 0 0 3px var(--vurgu); }
+.iletisim-formu .dugme { justify-self: start; }
+.marmara-alt { max-width: 1180px; margin: 0 auto; padding: 0 16px 40px; font-size: 0.85rem; color: rgba(255, 255, 255, 0.65); }
+
+@keyframes isik { to { transform: translateX(120%); } }
+@keyframes sec-halka { 0% { box-shadow: 0 0 0 0 rgba(26, 86, 196, 0.5); } 100% { box-shadow: 0 0 0 12px rgba(26, 86, 196, 0); } }
+@keyframes yuksel { from { opacity: 0; transform: translateY(26px) scale(0.98); } to { opacity: 1; transform: none; } }
+@keyframes kayan { 0%, 88% { opacity: 0; translate: 0 0; } 90% { opacity: 1; } 100% { opacity: 0; translate: -260px 95px; } }
+@keyframes marti-uc { from { left: -40px; } to { left: calc(100% + 40px); } }
+@keyframes kanat { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.55); } }
+@keyframes dalga-ak { from { background-position: 0 0, 0 0; } to { background-position: -120px 60px, 0 0; } }
+@keyframes kenar-dalga { from { -webkit-mask-position: 0 0; mask-position: 0 0; } to { -webkit-mask-position: -120px 0; mask-position: -120px 0; } }
+@keyframes ada-salin { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(2px); } }
+
+@media (max-width: 860px) {
+  .marmara-ic { grid-template-columns: minmax(0, 1fr); }
+  .marmara-sahne { height: 170px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .teklif, .ilan-kart, .kapi { transform: none; }
 }

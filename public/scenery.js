@@ -1,4 +1,4 @@
-// İstanbul gökyüzü: pazar açıkken gece, ay 21.00'den kapanışa kadar gökte ilerler ve
+// İstanbul gökyüzü: sistem açıkken gece, ay açılıştan kapanışa kadar gökte ilerler ve
 // Boğaz'da yakamoz bırakır; kapalıyken gündüz, güneş açılışa doğru batar.
 // Önde şehir silüeti (camiler, minareler, Galata Kulesi), arkada Anadolu yakasının tepeleri.
 
@@ -119,13 +119,12 @@ export function renderSky(market, { opens, closes, nightLabel, untilLabel }) {
       <div class="gok-yol" aria-hidden="true">
         <span class="gok-disk"></span>
         <span class="yakamoz"><i></i><i></i><i></i></span>
-        <span class="gok-saat bas">${market.open ? opens : closes}</span>
-        <span class="gok-saat son">${market.open ? closes : opens}</span>
       </div>
-      ${market.open ? `<div class="ates-bocekleri" aria-hidden="true">${FIREFLIES}</div>` : ''}
+      ${market.open ? `<div class="ates-bocekleri" aria-hidden="true">${FIREFLIES}</div><span class="kayan-yildiz" aria-hidden="true"></span>` : ''}
+      <span class="marti m1" aria-hidden="true"></span><span class="marti m2" aria-hidden="true"></span>
       <div class="gok-yazi">
         <p class="gok-ust-baslik">${nightLabel}</p>
-        <p class="gok-baslik">${market.open ? 'Pazar açık' : `Pazar ${opens}'de açılıyor`}</p>
+        <p class="gok-baslik">${market.open ? 'Sistem açık' : `Sistem ${opens}'de açılıyor`}</p>
         <p class="gok-alt-satir">${untilLabel}</p>
       </div>
     </div>`;

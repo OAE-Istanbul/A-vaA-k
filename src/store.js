@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 
-const emptyData = () => ({ buyers: {}, hotels: {}, listings: {}, offers: {}, sessions: {} });
+const emptyData = () => ({ buyers: {}, hotels: {}, listings: {}, offers: {}, sessions: {}, messages: {} });
 
 /** JSON dosyasına yazan basit kayıt deposu. file verilmezse yalnızca bellekte tutar. */
 export class Store {

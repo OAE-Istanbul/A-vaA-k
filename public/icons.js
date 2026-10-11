@@ -79,6 +79,7 @@ const PATHS = {
   // Şehir hatları vapuru
   vapur:
     '<path d="M2.5 14.5h19l-2.4 4q-.5.8-1.4.8H6.3q-.9 0-1.4-.8z"/><path d="M5.5 14.5V11h12v3.5"/><path d="M8 11V8.5h7V11"/><path d="M12.5 8.5V5h2.2v3.5"/><path d="M8 12.8h.1M11 12.8h.1M14 12.8h.1"/>',
+  balik: '<path d="M2.5 12c3-4.5 9-5.5 13.5-1.5L21 7v10l-5-3.5C11.5 17.5 5.5 16.5 2.5 12z"/><circle class="f" cx="7" cy="11" r="1"/>',
   saat: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
   arti: '<path d="M12 6v12M6 12h12"/>',
   eksi: '<path d="M6 12h12"/>',

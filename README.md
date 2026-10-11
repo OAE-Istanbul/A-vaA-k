@@ -1,13 +1,13 @@
-# İstanbul Gece Pazarı
+# İstanbul Kaçamak
 
 İstanbul genelinde son dakika konaklama için ters açık artırma. Alıcı bölgesini ve isteklerini yazarak bir ilan açar; o bölgedeki uygun oteller bu ilana teklif verir ve birbirinin fiyatını kırar ("bende 2.000 TL'ye kal", "hayır, bende 1.900 TL'ye kal"). Alıcı öne çıkan tekliflerden birini kabul eder, iki tarafın iletişim bilgileri karşılıklı açılır.
 
-Pazar her akşam 21:00'de açılır. Amaç, otellerin o gece boş kalacak odalarını maliyetine ya da düşük kârla doldurması; spontane alıcılar için de uygun fiyatlı bir kaçamak.
+Sistem her akşam 18:00'de açılır, oteller 02:00'ye kadar teklif verir. Amaç, otellerin o gece boş kalacak odalarını maliyetine ya da düşük kârla doldurması; spontane alıcılar için de uygun fiyatlı bir kaçamak.
 
 ## Kurallar
 
 **İlan (alıcı)**
-- Yalnızca pazar açıkken (varsayılan 21:00 ile 02:00 arası, İstanbul saati) açılabilir. Giriş her zaman o gecedir; gece yarısından sonra açılan ilan da bir önceki günün gecesine aittir.
+- Yalnızca pazar açıkken (varsayılan 18:00 ile 02:00 arası, İstanbul saati) açılabilir. Giriş her zaman o gecedir; gece yarısından sonra açılan ilan da bir önceki günün gecesine aittir.
 - Alıcı bir ya da birkaç bölge seçer (Sultanahmet, Beyoğlu, Beşiktaş, Şişli, Sarıyer, Kadıköy, Üsküdar, Beykoz, Adalar, Şile ve Ağva); seçmezse tüm İstanbul.
 - Alıcı misafir profilini (evli çift, çift, aile, arkadaş grubu, tek kişi), yetişkin ve çocuk sayısını, kaç gece kalacağını, tahmini varış saatini, istediği otel tiplerini ve olmazsa olmaz olanakları girer. Bütçe üst sınırı ve not isteğe bağlıdır.
 - Oda sayısı isteğe bağlıdır (varsayılan 1, en fazla 4). Çift ve tek kişi ilanları tek odalıdır; her odada en az bir yetişkin kalmalıdır.
@@ -49,12 +49,12 @@ Node.js 22 veya üstü yeterli, harici paket yok.
 
 ```bash
 npm start       # http://localhost:3000, veriler data/db.json dosyasına yazılır
-npm run demo    # saat bugün 21:05'ten başlar, veriler yalnızca bellekte tutulur
+npm run demo    # saat bugün 18:05'ten başlar, veriler yalnızca bellekte tutulur
 npm test        # birim ve API testleri
 npm install && npm run preview   # sunucusuz tek dosyalık önizleme: dist/preview/istanbul-onizleme.html
 ```
 
-Gündüz denemek için `npm run demo` kullanın. Demo modunda saat 21:05'ten başlayıp gerçek zamanla ilerler, böylece pazar açık görünür.
+Gündüz denemek için `npm run demo` kullanın. Demo modunda saat 18:05'ten başlayıp gerçek zamanla ilerler, böylece pazar açık görünür.
 
 Önizleme, pazar kodunun aynısını tarayıcıda çalıştırır: rakip oteller bot olarak fiyat kırar, üstteki çubuktan alıcı ya da otel gözüyle bakılır ve saat ileri alınarak süre sonu ile otomatik kabul görülür. `--standalone` ile doğrudan tarayıcıda açılabilen tam bir HTML dosyası üretilir.
 
@@ -65,10 +65,12 @@ Gündüz denemek için `npm run demo` kullanın. Demo modunda saat 21:05'ten ba�
 Palet lacivert, Türk kırmızısı ve beyaz.
 
 - **Menü:** Gece laciverti kapsül, sayfa kayarken üstte kalır; pazarın açık olup olmadığını ve kalan süreyi gösterir.
-- **Gökyüzü:** Pazar açıkken gece; önde İstanbul silüeti (camiler, minareler, Galata Kulesi), ay 21.00'den 02.00'ye ilerler. Kapalıyken gündüz.
-- **Boğaz:** Sayfanın ortasından geçer. Üst uç Karadeniz, alt uç Marmara; sol kıyı Avrupa, sağ kıyı Asya. Kıvrımlar gerçek Boğaz profilinden (Büyükdere genişliği, Rumeli Hisarı'ndaki en dar yer). Köprüler gerçek sırasıyla: Yavuz Sultan Selim (eğik askılı), Fatih Sultan Mehmet ve 15 Temmuz Şehitler (asma). Güneyde Kız Kulesi, suda iki yönde giden vapurlar. Akıntı gerçekte olduğu gibi kuzeyden güneye akar, kaydırınca hızlanır.
+- **Gökyüzü:** Sistem açıkken gece; önde İstanbul silüeti (camiler, minareler, Galata Kulesi), ay açılıştan kapanışa ilerler, kayan yıldız ve martılar geçer. Kapalıyken gündüz.
+- **Boğaz:** Sayfanın ortasından geçer; kuzey ucu beyaz sayfada biter, güney ucu sayfanın altında Marmara'ya açılır; sol kıyı Avrupa, sağ kıyı Asya. Kıvrımlar gerçek Boğaz profilinden (Büyükdere genişliği, Rumeli Hisarı'ndaki en dar yer). Köprüler gerçek sırasıyla: Yavuz Sultan Selim (eğik askılı), Fatih Sultan Mehmet ve 15 Temmuz Şehitler (asma). Güneyde Kız Kulesi, suda iki yönde giden vapurlar. Akıntı gerçekte olduğu gibi kuzeyden güneye akar, kaydırınca hızlanır.
+- **İlanınız:** Açık ilanınız Boğaz'da "İlanınız" etiketli kırmızı bir balık olarak yüzer; ilan bırakırken balık düğmeden sıçrayıp suya dalar.
+- **Marmara (sayfanın altı):** Adalar, martılar; Sık sorulanlar, yasal metinler (taslak, yayından önce hukukçu onayı gerekir) ve iletişim formu (`POST /api/contact`).
 - **Kişiler ve odalar:** Kelime yerine figürlerle: yetişkin mavi piyon, çocuk kırmızı küçük figür, her oda ayrı kutu.
-- **Hareketler:** Basınca su halkası; ilan verilince vapur kalkıp Boğaz'a iner; teklif fiyatı uçup "en düşük" kutusuna girer; anlaşmada laleler saçılır; yeni teklif Boğaz tarafından süzülür. Hareketi azalt ayarında hiçbiri oynamaz.
+- **Hareketler:** Basınca su halkası, seçimlerde kıvılcım, ana düğmeler imleci hafifçe izler ve üstünden ışık süzülür, kartlar imlece göre eğilir, ekran değişince kartlar sırayla yükselir; teklif fiyatı uçup "en düşük" kutusuna girer; anlaşmada laleler saçılır; yeni teklif Boğaz tarafından süzülür. Hareketi azalt ayarında hiçbiri oynamaz.
 - **Yazı tipleri:** Başlıklarda geniş ve kalın Anybody, metinde Ysabeau Infant; ikisi de projede barındırılır (SIL OFL) ve Türkçe karakterleri tam içerir.
 - **İkonlar:** `public/icons.js` içinde elle çizildi.
 
@@ -77,16 +79,16 @@ Palet lacivert, Türk kırmızısı ve beyaz.
 | Ortam değişkeni | Varsayılan | Açıklama |
 | --- | --- | --- |
 | `PORT` | 3000 | Sunucu portu |
-| `ACILIS_SAATI` | 21:00 | Pazarın açılış saati (İstanbul) |
+| `ACILIS_SAATI` | 18:00 | Pazarın açılış saati (İstanbul) |
 | `KAPANIS_SAATI` | 02:00 | Kapanış saati; açılıştan küçükse ertesi gün demektir |
 | `MIN_DUSUS_TL` | 50 | Yeni teklifin en düşük tekliften en az ne kadar düşük olacağı |
 | `UZATMA_DK` | 2 | Son dakika teklifinde süre uzatması |
 | `KABUL_SURESI_DK` | 5 | Süre bitince alıcının seçim süresi; sonra en iyi fiyat otomatik kabul edilir |
-| `MAKS_GECE` | 3 | Bir ilanda en fazla gece sayısı |
+| `MAKS_GECE` | 2 | Kaçamak tek gece, en fazla bir gece uzatılabilir |
 | `MAKS_ODA` | 4 | Bir ilanda en fazla oda sayısı |
 | `VERI_DOSYASI` | data/db.json | Kayıt dosyası; boş bırakılırsa yalnızca bellek |
 | `DEMO_SAAT` | yok | Saati bugün bu saatten başlatır (örn. 21:30) |
-| `UYGULAMA_ADI` | İstanbul | Arayüzde görünen ad |
+| `UYGULAMA_ADI` | İstanbul Kaçamak | Arayüzde görünen ad |
 
 ## API
 

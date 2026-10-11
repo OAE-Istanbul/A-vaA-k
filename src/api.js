@@ -48,6 +48,7 @@ export function createApi({ market, auth, config }) {
     route('POST', '/api/listings/:id/cancel', ({ user, params }) => market.cancelListing(user.id, params.id), 'buyer'),
     route('POST', '/api/listings/:id/accept', ({ user, params, body }) => market.acceptOffer(user.id, params.id, body.offerId), 'buyer'),
     route('POST', '/api/listings/:id/offers', ({ user, params, body }) => market.placeOffer(user.id, params.id, body), 'hotel'),
+    route('POST', '/api/contact', ({ body }) => market.saveContact(body)),
     route('GET', '/api/hotel/feed', ({ user }) => market.hotelFeed(user.id), 'hotel'),
   ];
 

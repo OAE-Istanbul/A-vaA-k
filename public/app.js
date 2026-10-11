@@ -1,4 +1,4 @@
-import { bump, flyTo, launchBoat, leafBurst, pressRipple, springIn } from './fx.js';
+import { bump, flyTo, launchFish, leafBurst, pointerEffects, pressRipple, sparkle, springIn } from './fx.js';
 import { mountBosphorus } from './bogaz.js';
 import { icon, logo } from './icons.js';
 import { renderSky, updateSky } from './scenery.js';
@@ -263,14 +263,25 @@ function render() {
   // Değişmeyen ekran yeniden çizilmez: animasyonlar ve yazılan metin bozulmasın.
   if (html !== state.viewHtml) {
     const snapshot = captureForms();
-    $('#view').innerHTML = html;
+    const view = $('#view');
+    view.innerHTML = html;
     state.viewHtml = html;
+    // Ekran türü değişince kartlar sırayla yükselerek gelir; aynı ekranın yenilenmesinde gelmez.
+    const screen = `${state.session?.role ?? 'giris'}-${html.includes('ilan-formu') ? 'form' : html.includes('ilan-ozet') ? 'ilan' : 'diger'}`;
+    if (screen !== state.screen) {
+      view.classList.remove('giris-animasyonu');
+      void view.offsetWidth;
+      view.classList.add('giris-animasyonu');
+      state.screen = screen;
+    }
     restoreForms(snapshot);
     syncDraft();
     animateDrops();
   }
   state.arrivals.clear();
   state.drops.clear();
+  // Alıcının açık ilanı Boğaz'da balık olarak yüzer.
+  state.bogaz?.setOwnFish(state.session?.role === 'buyer' && Array.isArray(state.data) && state.data.some((l) => LIVE.has(l.status)));
   tick();
 }
 
@@ -278,7 +289,7 @@ function renderMenu() {
   const m = state.market;
   const { marketOpens } = state.meta.rules;
   $('#menu-durum').innerHTML = m.open
-    ? `<span class="nokta"></span><b>Pazar açık</b><span class="menu-sure">kapanışa <strong data-until="${m.closesAt}"></strong></span>`
+    ? `<span class="nokta"></span><b>Sistem açık</b><span class="menu-sure">kapanışa <strong data-until="${m.closesAt}"></strong></span>`
     : `<span class="nokta kapali"></span><b>${clockTR(marketOpens)}'de açılıyor</b><span class="menu-sure"><strong data-until="${m.opensAt}"></strong></span>`;
   $('#session-box').innerHTML = state.session
     ? `<span class="oturum-ad"><i>${esc(state.session.name.slice(0, 1))}</i><span>${esc(state.session.name)}</span></span><button class="menu-cikis" data-action="logout">Çıkış</button>`
@@ -297,8 +308,8 @@ function renderSkyBand() {
     closes: clockTR(marketCloses),
     nightLabel: m.open ? `${dateTR(m.nightDate)} gecesi` : 'Gündüz kapalı',
     untilLabel: m.open
-      ? `${clockTR(marketCloses)}'ye kadar oteller fiyat kırıyor`
-      : `Boş kalacak odalar ${clockTR(marketOpens)}'de pazara düşer`,
+      ? `Oteller ${clockTR(marketCloses)}'ye kadar teklif veriyor!`
+      : `Boş kalacak odalar her akşam ${clockTR(marketOpens)}'de sisteme düşer`,
   });
 }
 
@@ -431,7 +442,7 @@ function landingView() {
         <p class="giris-ozet">Şehrin dört bir yanında bu gece boş kalacak odalar var.
         Bölgenizi, kaç kişi olduğunuzu ve neler istediğinizi yazın; size uyan oteller birbirinin fiyatını kırarak teklif versin.</p>
         <ol class="adimlar">
-          <li><span>${icon('vapur')}</span><div><b>İlanınızı Boğaz'a bırakın</b>Hangi semtte, kaç kişi, ne zaman varırsınız, neler olmazsa olmaz?</div></li>
+          <li><span>${icon('balik')}</span><div><b>İlanınızı Boğaz'a bırakın</b>Hangi semtte, kaç kişi, ne zaman varırsınız, neler olmazsa olmaz?</div></li>
           <li><span>${icon('price')}</span><div><b>Oteller fiyat kırsın</b>Yalnızca size uyan oteller görür. Her yeni teklif en az ${tl(rules.minDecrementTL)} daha ucuz.</div></li>
           <li><span>${icon('value')}</span><div><b>En iyisini seçin</b>En iyi fiyat, en çok olanak, fiyat/performans. ${rules.acceptGraceMinutes} dakikada seçmezseniz en iyi fiyat sizin.</div></li>
         </ol>
@@ -535,7 +546,7 @@ function newListingForm() {
       </form>
       <aside class="kiyi sag taslak-kiyi">
         <div class="taslak tas koyu" id="taslak"></div>
-        <button class="dugme ana iri gemi-dugme" form="ilan-formu">${icon('vapur')}İlanı Boğaz'a bırakın</button>
+        <button class="dugme ana iri gemi-dugme" form="ilan-formu">${icon('balik')}İlanı Boğaz'a bırakın</button>
       </aside>
     </div>`;
 }
@@ -721,7 +732,7 @@ function roomsTonight(rooms) {
 function hotelView({ hotel, live, won }) {
   const closedNotice = state.market.open
     ? ''
-    : `<div class="tas bos">Pazar kapalı. İlanlar her akşam ${clockTR(state.meta.rules.marketOpens)}'de düşmeye başlar.</div>`;
+    : `<div class="tas bos">Sistem kapalı. İlanlar her akşam ${clockTR(state.meta.rules.marketOpens)}'de düşmeye başlar.</div>`;
   return `
     <div class="kiyilar">
       <aside class="kiyi sol">
@@ -856,7 +867,16 @@ const submitHandlers = {
     });
     toast('İlanınız yayında. Uygun oteller teklif vermeye başlayabilir.', 'success');
     state.draftGuests = null;
-    return () => from && launchBoat(from, icon('vapur'));
+    // Sayfa başa kayar, balık ekranın altından sıçrayıp Boğaz'daki yerine dalar.
+    return () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      const start = { left: window.innerWidth * 0.75, top: window.innerHeight - 40, width: 0, height: 0 };
+      setTimeout(() => launchFish(from && from.top < window.innerHeight ? from : start, icon('balik')), 450);
+    };
+  },
+  contact: async (form, fd) => {
+    await api('/api/contact', { method: 'POST', body: { name: fd.get('name'), reply: fd.get('reply'), message: fd.get('message') } });
+    toast('Mesajınız bize ulaştı. En kısa sürede dönüş yapacağız.', 'success');
   },
   offer: async (form, fd, button) => {
     const from = button?.getBoundingClientRect();
@@ -948,6 +968,7 @@ function bindEvents() {
   });
 
   document.addEventListener('change', (event) => {
+    if (event.target.matches('.secim input') && event.target.checked) sparkle(event.target.nextElementSibling);
     const form = event.target.form;
     if (event.target.name === 'group' && form) {
       const defaults = GROUP_DEFAULTS[event.target.value];
@@ -969,8 +990,9 @@ window.addEventListener('agva:session', (event) => {
 });
 
 async function init() {
-  $('#marka').innerHTML = `${logo}<span class="marka-ad">İstanbul</span><span class="marka-alt">gece pazarı</span>`;
-  mountBosphorus($('#akis'));
+  $('#marka').innerHTML = `${logo}<span class="marka-ad">İstanbul Kaçamak</span>`;
+  state.bogaz = mountBosphorus($('#akis'), $('#marmara'));
+  pointerEffects();
   try {
     state.meta = await api('/api/meta');
   } catch (err) {

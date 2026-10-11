@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0a2350">
-  <title>İstanbul Gece Pazarı</title>
+  <title>İstanbul Kaçamak</title>
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="preload" href="fonts/anybody-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="fonts/ysabeau-infant-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
@@ -24,9 +24,55 @@
     <main id="view" class="sayfa">
       <p class="yukleniyor">Yükleniyor…</p>
     </main>
-    <footer class="alt">
-      <p>İstanbul, Karadeniz'den Marmara'ya. Adalar'dan Ağva'ya bu gece boş kalacak odalar.</p>
-      <p>Fiyatlar konaklamanın toplam tutarıdır. Bu sürüm demo amaçlıdır; ödeme ve kimlik doğrulama içermez.</p>
+    <footer class="marmara" id="marmara">
+      <div class="marmara-sahne" aria-hidden="true">
+        <svg viewBox="0 0 1200 260" preserveAspectRatio="xMidYMax slice">
+          <g class="ada">
+            <path d="M560 200q22-26 48-10 18-14 34 4 10 4 14 6z"/>
+            <path d="M700 200q30-40 66-24 30-30 62 0 26 2 40 24z"/>
+            <path d="M880 200q36-52 84-34 26-40 74-12 34-8 60 22 30 6 42 24z"/>
+            <path d="M440 200q16-18 34-6 12-6 22 6z"/>
+          </g>
+          <g class="ada-ev">
+            <rect x="590" y="186" width="6" height="6"/><rect x="740" y="178" width="7" height="7"/><rect x="760" y="184" width="6" height="6"/>
+            <rect x="930" y="170" width="8" height="8"/><rect x="960" y="176" width="7" height="7"/><rect x="1010" y="168" width="8" height="8"/><rect x="1060" y="180" width="7" height="7"/>
+          </g>
+          <g class="ada-ad">
+            <text x="468" y="222">Kınalıada</text><text x="604" y="222">Burgazada</text><text x="780" y="222">Heybeliada</text><text x="980" y="222">Büyükada</text>
+          </g>
+        </svg>
+        <span class="marti m1"></span><span class="marti m2"></span><span class="marti m3"></span>
+      </div>
+      <div class="marmara-ic">
+        <section class="sss" aria-labelledby="sss-baslik">
+          <h2 id="sss-baslik">Sık sorulanlar</h2>
+          <details><summary>İstanbul Kaçamak nasıl çalışıyor?</summary><p>Bölgenizi, kaç kişi olduğunuzu ve neler istediğinizi yazarak ilan bırakırsınız. Yalnızca isteklerinize uyan oteller ilanı görür ve birbirinin fiyatını kırarak teklif verir. Süre bitince öne çıkan tekliflerden birini seçersiniz.</p></details>
+          <details><summary>Ne zaman ilan bırakabilirim?</summary><p>Sistem her akşam 18.00'de açılır, oteller 02.00'ye kadar teklif verir. Konaklama her zaman o gece başlar.</p></details>
+          <details><summary>En fazla kaç gece kalabilirim?</summary><p>Kaçamak tek gecedir; isterseniz bir gece daha uzatabilirsiniz. İki geceden uzun konaklama yoktur.</p></details>
+          <details><summary>Seçim yapmazsam ne olur?</summary><p>Teklifler kapandıktan sonra 5 dakikanız var. Seçmezseniz en iyi fiyat otomatik kabul edilir.</p></details>
+          <details><summary>Teklifi kabul edince ne olur?</summary><p>Otelin telefonu ve adresi size, adınız ve telefonunuz otele açılır. Ödemeyi otelde yaparsınız.</p></details>
+          <details><summary>Seçtiğim oda başkasına giderse?</summary><p>Aynı oda iki misafire verilemez; ilk kabul eden alır. O otelin teklifi listenizden çıkar, kalan tekliflerden birini seçebilirsiniz.</p></details>
+          <details><summary>Otelim nasıl katılır?</summary><p>Aşağıdaki formdan bize yazın; oteliniz ve odalarınız tanımlandıktan sonra her akşam size uyan ilanları görmeye başlarsınız.</p></details>
+        </section>
+        <section class="yasal" aria-labelledby="yasal-baslik">
+          <h2 id="yasal-baslik">Yasal</h2>
+          <details><summary>Kullanım koşulları</summary><p>İstanbul Kaçamak, alıcı ile otel arasında teklif toplayan bir aracıdır; konaklama sözleşmesi doğrudan alıcı ile otel arasında kurulur. Kabul edilen teklif iki taraf için bağlayıcıdır.</p></details>
+          <details><summary>KVKK aydınlatma metni</summary><p>Adınız ve telefonunuz yalnızca ilanınızı yönetmek ve kabul ettiğiniz otelle paylaşmak için işlenir. Otellere ilan sırasında kimliğiniz gösterilmez. KVKK'nın 11. maddesindeki haklarınız için iletişim formunu kullanabilirsiniz.</p></details>
+          <details><summary>Çerez politikası</summary><p>Yalnızca oturumunuzu hatırlamak için tarayıcı deposu kullanılır; reklam ya da takip çerezi yoktur.</p></details>
+          <details><summary>İptal ve gelmeme</summary><p>Kabul edilen bir konaklamada iptal ve gelmeme koşulları otelin kendi kurallarına tabidir; varış saatinizi değiştirmeniz gerekirse oteli arayın.</p></details>
+          <p class="taslak-not">Metinler taslaktır.</p>
+        </section>
+        <section class="iletisim-bolumu" aria-labelledby="iletisim-baslik">
+          <h2 id="iletisim-baslik">Bize ulaşın</h2>
+          <form class="iletisim-formu" data-key="contact">
+            <label class="alan">Adınız <input name="name" required maxlength="60" autocomplete="name"></label>
+            <label class="alan">E-posta ya da telefon <input name="reply" required maxlength="80"></label>
+            <label class="alan">Mesajınız <textarea name="message" required maxlength="1000" rows="3"></textarea></label>
+            <button class="dugme acik">Gönderin</button>
+          </form>
+        </section>
+      </div>
+      <p class="marmara-alt">© 2026 İstanbul Kaçamak. Fiyatlar konaklamanın toplam tutarıdır. Demo sürüm; ödeme ve kimlik doğrulama içermez.</p>
     </footer>
   </div>
   <div id="toast" class="toast" role="status" hidden></div>

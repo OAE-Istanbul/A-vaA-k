@@ -8,10 +8,10 @@ import { DEMO_PIN, seedHotels } from './seed.js';
 import { createServer } from './server.js';
 import { Store } from './store.js';
 
-// --demo: saat bugün 21:05'ten başlar, veriler yalnızca bellekte tutulur.
+// --demo: saat bugün 18:05'ten başlar, veriler yalnızca bellekte tutulur.
 const demo = process.argv.includes('--demo');
 const config = demo
-  ? { ...defaultConfig, demoTime: defaultConfig.demoTime ?? '21:05', dataFile: null }
+  ? { ...defaultConfig, demoTime: defaultConfig.demoTime ?? '18:05', dataFile: null }
   : defaultConfig;
 
 const store = new Store(config.dataFile);
@@ -28,6 +28,6 @@ server.listen(config.port, () => {
   const status = market.marketStatus();
   const time = (ms) => new Date(ms).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' });
   console.log(`${config.appName} çalışıyor: http://localhost:${config.port}`);
-  console.log(status.open ? `Pazar açık, kapanış ${time(status.closesAt)}` : `Pazar kapalı, açılış ${time(status.opensAt)}`);
+  console.log(status.open ? `Sistem açık, kapanış ${time(status.closesAt)}` : `Sistem kapalı, açılış ${time(status.opensAt)}`);
   if (config.demoTime) console.log(`Demo saati etkin (${config.demoTime}'ten başladı). Otel PIN'leri: ${DEMO_PIN}`);
 });
