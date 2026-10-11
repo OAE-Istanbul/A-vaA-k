@@ -12,7 +12,7 @@
   right: 0;
   bottom: 0;
   height: 8px;
-  background: var(--yesil);
+  background: var(--ana);
   -webkit-mask: var(--dalga-yatay) repeat-x 0 0 / 32px 8px;
   mask: var(--dalga-yatay) repeat-x 0 0 / 32px 8px;
 }
@@ -45,5 +45,5 @@
   cursor: pointer;
 }
 .preview-check { display: flex; align-items: center; gap: 6px; margin: 0; }
-.preview-check input { width: auto; accent-color: var(--yesil); }
+.preview-check input { width: auto; accent-color: var(--ana); }
 .preview-hint { max-width: 1040px; margin: 6px auto 0; padding: 0 16px; color: var(--soluk); font-size: 0.85rem; }

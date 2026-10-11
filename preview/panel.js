@@ -11,8 +11,8 @@ export function mountPanel(preview) {
       <span class="preview-label">Önizleme</span>
       <label class="preview-field">Görünüm
         <select id="preview-view">
-          <option value="ayse">Alıcı: Ayşe (evli çift)</option>
-          <option value="mert">Alıcı: Mert (4 arkadaş, 2 oda)</option>
+          <option value="ayse">Alıcı: Ayşe (evli çift, Boğaz)</option>
+          <option value="mert">Alıcı: Mert (4 arkadaş, Kadıköy)</option>
           ${hotelOptions}
         </select>
       </label>

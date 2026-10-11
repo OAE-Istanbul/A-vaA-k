@@ -2,7 +2,7 @@
 const env = globalThis.process?.env ?? {};
 
 export const defaultConfig = Object.freeze({
-  appName: env.UYGULAMA_ADI ?? 'Ağva',
+  appName: env.UYGULAMA_ADI ?? 'İstanbul',
   port: Number(env.PORT ?? 3000),
   // Pazar penceresi, İstanbul saatiyle. Kapanış açılıştan küçük ya da eşitse gece yarısını aşar.
   marketOpens: env.ACILIS_SAATI ?? '21:00',

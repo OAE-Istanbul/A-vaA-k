@@ -61,8 +61,8 @@ test('alıcıdan otele uçtan uca akış', async () => {
   });
   assert.equal(offer.status, 200, offer.data.error);
 
-  // Kayalar butik otelde jakuzi yok, ilanı görmemeli.
-  const other = await call('/api/session', { method: 'POST', body: { role: 'hotel', hotelId: 'kayalar', pin: DEMO_PIN } });
+  // Mavi Konak'ta jakuzi yok, ilanı görmemeli.
+  const other = await call('/api/session', { method: 'POST', body: { role: 'hotel', hotelId: 'mavi-konak', pin: DEMO_PIN } });
   assert.equal((await call('/api/hotel/feed', { token: other.data.token })).data.live.length, 0);
 
   const mine = await call('/api/listings/mine', { token: buyer.data.token });

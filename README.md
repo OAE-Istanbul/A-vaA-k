@@ -1,6 +1,6 @@
-# Ağva Gece Teklifleri
+# İstanbul Gece Pazarı
 
-Ağva'da son dakika konaklama için ters açık artırma. Alıcı bir ilan açar, Ağva'daki uygun oteller bu ilana teklif verir ve birbirinin fiyatını kırar ("bende 2.000 TL'ye kal", "hayır, bende 1.900 TL'ye kal"). Alıcı beğendiği teklifi kabul eder, iki tarafın iletişim bilgileri karşılıklı açılır.
+İstanbul genelinde son dakika konaklama için ters açık artırma. Alıcı bölgesini ve isteklerini yazarak bir ilan açar; o bölgedeki uygun oteller bu ilana teklif verir ve birbirinin fiyatını kırar ("bende 2.000 TL'ye kal", "hayır, bende 1.900 TL'ye kal"). Alıcı öne çıkan tekliflerden birini kabul eder, iki tarafın iletişim bilgileri karşılıklı açılır.
 
 Pazar her akşam 21:00'de açılır. Amaç, otellerin o gece boş kalacak odalarını maliyetine ya da düşük kârla doldurması; spontane alıcılar için de uygun fiyatlı bir kaçamak.
 
@@ -8,13 +8,14 @@ Pazar her akşam 21:00'de açılır. Amaç, otellerin o gece boş kalacak odalar
 
 **İlan (alıcı)**
 - Yalnızca pazar açıkken (varsayılan 21:00 ile 02:00 arası, İstanbul saati) açılabilir. Giriş her zaman o gecedir; gece yarısından sonra açılan ilan da bir önceki günün gecesine aittir.
+- Alıcı bir ya da birkaç bölge seçer (Sultanahmet, Beyoğlu, Beşiktaş, Şişli, Sarıyer, Kadıköy, Üsküdar, Beykoz, Adalar, Şile ve Ağva); seçmezse tüm İstanbul.
 - Alıcı misafir profilini (evli çift, çift, aile, arkadaş grubu, tek kişi), yetişkin ve çocuk sayısını, kaç gece kalacağını, tahmini varış saatini, istediği otel tiplerini ve olmazsa olmaz olanakları girer. Bütçe üst sınırı ve not isteğe bağlıdır.
 - Oda sayısı isteğe bağlıdır (varsayılan 1, en fazla 4). Çift ve tek kişi ilanları tek odalıdır; her odada en az bir yetişkin kalmalıdır.
 - Teklif süresi 15, 30, 45 ya da 60 dakikadır ve pazarın kapanışını aşamaz. Kapanışa 5 dakikadan az kala ilan açılmaz.
 - Bir alıcının aynı anda tek açık ilanı olur. Alıcı ilanını iptal edebilir.
 
 **Uygunluk (otel)**
-- Otel ilanı yalnızca şu koşulların hepsi sağlanırsa görür ve teklif verebilir: alıcının seçtiği otel tiplerinden biri (seçim yoksa hepsi), istenen olanakların tamamı, alıcının profilini kabul etmesi ve istenen sayıda, tüm misafirleri sığdıran bir oda tipi olması (örneğin 2 oda isteyen 4 kişi için en az 2 adet 2 kişilik oda).
+- Otel ilanı yalnızca şu koşulların hepsi sağlanırsa görür ve teklif verebilir: alıcının seçtiği bölgelerden birinde olması, otel tiplerinden biri (seçim yoksa hepsi), istenen olanakların tamamı, alıcının profilini kabul etmesi ve istenen sayıda, tüm misafirleri sığdıran bir oda tipi olması (örneğin 2 oda isteyen 4 kişi için en az 2 adet 2 kişilik oda).
 - Otel, alıcının kimliğini ve telefonunu görmez. En düşük teklifi, teklif sayısını ve kendi durumunu görür.
 
 **Teklif (ters açık artırma)**
@@ -50,7 +51,7 @@ Node.js 22 veya üstü yeterli, harici paket yok.
 npm start       # http://localhost:3000, veriler data/db.json dosyasına yazılır
 npm run demo    # saat bugün 21:05'ten başlar, veriler yalnızca bellekte tutulur
 npm test        # birim ve API testleri
-npm install && npm run preview   # sunucusuz tek dosyalık önizleme: dist/preview/agva-onizleme.html
+npm install && npm run preview   # sunucusuz tek dosyalık önizleme: dist/preview/istanbul-onizleme.html
 ```
 
 Gündüz denemek için `npm run demo` kullanın. Demo modunda saat 21:05'ten başlayıp gerçek zamanla ilerler, böylece pazar açık görünür.
@@ -61,21 +62,15 @@ Gündüz denemek için `npm run demo` kullanın. Demo modunda saat 21:05'ten ba�
 
 ## Tasarım
 
-Ana palet beyaz ve yeşil; kontrast için koyu yeşil. Görsel dil Ağva'nın kendisinden geliyor.
+Palet lacivert, Türk kırmızısı ve beyaz.
 
-- **Menü:** Koyu yeşil kapsül, sayfa kayarken üstte kalır. Pazarın açık olup olmadığını ve kalan süreyi her an gösterir.
-- **Gökyüzü:** Pazar açıkken gece; ay 21.00'den 02.00'ye ilerler, derede yakamoz vardır. Kapalıyken gündüz ve güneş.
-- **Dere:** Göksu sayfanın ortasından kıvrılarak akar. Su dokusu sürekli akar, sayfa kaydırıldıkça hızlanır, üstünde yapraklar sürüklenir. Geniş ekranda içerik iki kıyıya oturur (solda ilan ya da otel, sağda teklifler); dar ekranda dere kartların arkasından geçer.
-- **Kişiler ve odalar:** Kelime yerine figürlerle gösterilir. Yetişkin için piyon, çocuk için daha küçük figür; her oda ayrı bir taş, gece ay simgesiyle, varış saat simgesiyle.
-- **Hareketler:**
-  - Her düğmede, basılan yerden suya taş düşmüş gibi halka yayılır ve düğme yaylanır.
-  - İlan gönderilince kağıt gemi kalkıp dereye iner ve akıp gider.
-  - Otel teklif verince fiyat uçup "en düşük" kutusuna girer ("sepete ekle" hareketi).
-  - Anlaşmada yapraklar saçılır, onay işareti çizilir.
-  - Yeni teklif dereden süzülür; fiyatın etrafında halkalar yayılır.
-  - Hareketi azalt ayarı açık olanlarda bu hareketlerin hiçbiri oynamaz.
-- **Yazı tipleri:** Başlık, fiyat ve düğmelerde geniş ve kalın Anybody (değişken genişlik), metinde Ysabeau Infant. İkisi de projede barındırılır (`public/fonts`, SIL Open Font License) ve Türkçe karakterlerin tamamını içerir.
-- **İkonlar:** `public/icons.js` içinde elle çizildi; hazır kütüphane yok.
+- **Menü:** Gece laciverti kapsül, sayfa kayarken üstte kalır; pazarın açık olup olmadığını ve kalan süreyi gösterir.
+- **Gökyüzü:** Pazar açıkken gece; önde İstanbul silüeti (camiler, minareler, Galata Kulesi), ay 21.00'den 02.00'ye ilerler. Kapalıyken gündüz.
+- **Boğaz:** Sayfanın ortasından geçer. Üst uç Karadeniz, alt uç Marmara; sol kıyı Avrupa, sağ kıyı Asya. Kıvrımlar gerçek Boğaz profilinden (Büyükdere genişliği, Rumeli Hisarı'ndaki en dar yer). Köprüler gerçek sırasıyla: Yavuz Sultan Selim (eğik askılı), Fatih Sultan Mehmet ve 15 Temmuz Şehitler (asma). Güneyde Kız Kulesi, suda iki yönde giden vapurlar. Akıntı gerçekte olduğu gibi kuzeyden güneye akar, kaydırınca hızlanır.
+- **Kişiler ve odalar:** Kelime yerine figürlerle: yetişkin mavi piyon, çocuk kırmızı küçük figür, her oda ayrı kutu.
+- **Hareketler:** Basınca su halkası; ilan verilince vapur kalkıp Boğaz'a iner; teklif fiyatı uçup "en düşük" kutusuna girer; anlaşmada laleler saçılır; yeni teklif Boğaz tarafından süzülür. Hareketi azalt ayarında hiçbiri oynamaz.
+- **Yazı tipleri:** Başlıklarda geniş ve kalın Anybody, metinde Ysabeau Infant; ikisi de projede barındırılır (SIL OFL) ve Türkçe karakterleri tam içerir.
+- **İkonlar:** `public/icons.js` içinde elle çizildi.
 
 ## Ayarlar
 
@@ -91,7 +86,7 @@ Ana palet beyaz ve yeşil; kontrast için koyu yeşil. Görsel dil Ağva'nın ke
 | `MAKS_ODA` | 4 | Bir ilanda en fazla oda sayısı |
 | `VERI_DOSYASI` | data/db.json | Kayıt dosyası; boş bırakılırsa yalnızca bellek |
 | `DEMO_SAAT` | yok | Saati bugün bu saatten başlatır (örn. 21:30) |
-| `UYGULAMA_ADI` | Ağva | Arayüzde görünen ad |
+| `UYGULAMA_ADI` | İstanbul | Arayüzde görünen ad |
 
 ## API
 

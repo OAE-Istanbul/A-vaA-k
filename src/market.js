@@ -60,7 +60,7 @@ export class Marketplace {
 
   hotelDirectory() {
     return Object.values(this.#db.hotels)
-      .map(({ id, name, type }) => ({ id, name, type }))
+      .map(({ id, name, type, region }) => ({ id, name, type, region }))
       .sort((a, b) => a.name.localeCompare(b.name, 'tr'));
   }
 
@@ -445,6 +445,7 @@ const publicListing = (l) => ({
   adults: l.adults,
   children: l.children,
   roomCount: roomCount(l),
+  regions: l.regions ?? [],
   hotelTypes: l.hotelTypes,
   amenities: l.amenities,
   maxBudget: l.maxBudget,
@@ -456,6 +457,7 @@ const publicHotel = (h) => ({
   id: h.id,
   name: h.name,
   type: h.type,
+  region: h.region,
   amenities: h.amenities,
   description: h.description,
 });

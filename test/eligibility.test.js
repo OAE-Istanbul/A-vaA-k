@@ -39,3 +39,12 @@ test('yeterli kapasitede oda yoksa uygun değil', () => {
   assert.equal(checkEligibility(hotel(), family).eligible, false);
   assert.deepEqual(suitableRooms(hotel(), listing({ group: 'aile', adults: 2, children: 1 })).map((r) => r.name), ['Aile odası']);
 });
+
+test('alıcı bölge seçtiyse yalnızca o bölgedeki oteller uygun', () => {
+  const kadikoy = hotel({ region: 'kadikoy' });
+  assert.equal(checkEligibility(kadikoy, listing({ regions: ['kadikoy', 'uskudar'] })).eligible, true);
+  const result = checkEligibility(kadikoy, listing({ regions: ['beyoglu'] }));
+  assert.equal(result.eligible, false);
+  assert.match(result.reasons[0], /Beyoğlu ve Galata/);
+  assert.equal(checkEligibility(kadikoy, listing({ regions: [] })).eligible, true);
+});

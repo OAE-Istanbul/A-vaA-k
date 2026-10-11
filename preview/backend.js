@@ -15,7 +15,7 @@ const DEMO_PIN = '1234';
 
 // Gecelik başlangıç fiyatları (botların ilk teklifi için kaba tahmin).
 const NIGHTLY_TL = { bungalov: 3200, butik_otel: 3600, pansiyon: 2200, dag_evi: 4800, tiny_house: 3000, otel: 2900 };
-const BOT_NOTES = ['Geç çıkış hediye', 'Hoş geldin ikramı bizden', 'Şömine yakılmış olacak', 'Erken kahvaltı hazırlarız'];
+const BOT_NOTES = ['Geç çıkış hediye', 'Hoş geldin ikramı bizden', 'Odaya çay ve simit', 'Erken kahvaltı hazırlarız'];
 
 export const BUYERS = {
   ayse: { name: 'Ayşe', phone: '05550000001' },
@@ -47,20 +47,20 @@ function buyerId(key) {
 
 function seedScenario() {
   resetData();
-  // Ayşe: evli çift, jakuzi şart. Yeşilvadi, Orman İçi ve Sakin Tiny House teklif verebilir.
+  // Ayşe: evli çift, Boğaz manzarası şart, Beyoğlu, Beşiktaş ya da Üsküdar.
   const ayse = market.createListing(buyerId('ayse'), {
     group: 'evli_cift', adults: 2, children: 0, roomCount: 1, nights: 1, arrivalTime: '22:30',
-    hotelTypes: [], amenities: ['jakuzi'], maxBudget: 4000, durationMinutes: 15,
-    note: 'Yıl dönümümüz, geç varabiliriz.',
+    regions: ['beyoglu', 'besiktas', 'uskudar'], hotelTypes: [], amenities: ['bogaz_manzarasi'],
+    maxBudget: 5000, durationMinutes: 15, note: 'Yıl dönümümüz, geç varabiliriz.',
   });
-  market.placeOffer('orman-ici', ayse.id, { price: 3600, roomName: 'Tüm ev', note: 'Ev tamamen size ait' });
-  market.placeOffer('yesilvadi', ayse.id, { price: 3400, roomName: 'Jakuzili bungalov', note: 'Geç çıkış hediye' });
-  market.placeOffer('sakin-tiny', ayse.id, { price: 3250, roomName: 'Tiny house', note: '' });
+  market.placeOffer('ortakoy-kiyi', ayse.id, { price: 4200, roomName: 'Standart oda', note: 'Köprü manzaralı oda' });
+  market.placeOffer('galata-cati', ayse.id, { price: 3950, roomName: 'Çift oda', note: 'Geç çıkış hediye' });
+  market.placeOffer('kuzguncuk-ev', ayse.id, { price: 3800, roomName: 'Bahçe odası', note: '' });
 
-  // Mert: 4 arkadaş, 2 oda, otopark şart. Kayalar ve Çamlık teklif verebilir.
+  // Mert: 4 arkadaş, 2 oda, Kadıköy'de, kahvaltı şart. Moda Pansiyon ve Kadıköy Rıhtım teklif verebilir.
   market.createListing(buyerId('mert'), {
     group: 'arkadas', adults: 4, children: 0, roomCount: 2, nights: 1, arrivalTime: '23:15',
-    hotelTypes: [], amenities: ['otopark'], maxBudget: null, durationMinutes: 30, note: '',
+    regions: ['kadikoy'], hotelTypes: [], amenities: ['kahvalti'], maxBudget: null, durationMinutes: 30, note: '',
   });
 }
 

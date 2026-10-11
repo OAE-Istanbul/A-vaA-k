@@ -276,3 +276,14 @@ test('çok gecelik konaklama ertesi geceyi de doldurur, tek gecelik doldurmaz', 
   market.createListing('u1', listingInput());
   assert.equal(market.hotelFeed('tiny').live.length, 1);
 });
+
+test('bölge seçimi doğrulanır ve otel akışına yansır', () => {
+  const { market } = setup({
+    hotels: [hotel({ id: 'avrupa', region: 'beyoglu' }), hotel({ id: 'asya', region: 'kadikoy' })],
+  });
+  rejects(() => market.createListing('u1', listingInput({ regions: ['mars'] })), /bölge/);
+  const listing = market.createListing('u1', listingInput({ regions: ['kadikoy'] }));
+  assert.deepEqual(listing.regions, ['kadikoy']);
+  assert.equal(market.hotelFeed('asya').live.length, 1);
+  assert.equal(market.hotelFeed('avrupa').live.length, 0);
+});

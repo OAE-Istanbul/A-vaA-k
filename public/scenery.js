@@ -1,6 +1,6 @@
-// Ağva gökyüzü: pazar açıkken gece, ay 21.00'den kapanışa kadar gökte ilerler ve
-// derede yakamoz bırakır; kapalıyken gündüz, güneş açılışa doğru batar.
-// Orman sırtı her seferinde aynı tohumdan üretilir (yuvarlak taçlı kayın ve meşe).
+// İstanbul gökyüzü: pazar açıkken gece, ay 21.00'den kapanışa kadar gökte ilerler ve
+// Boğaz'da yakamoz bırakır; kapalıyken gündüz, güneş açılışa doğru batar.
+// Önde şehir silüeti (camiler, minareler, Galata Kulesi), arkada Anadolu yakasının tepeleri.
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const W = 1200;
@@ -44,12 +44,49 @@ function stars() {
   }).join('');
 }
 
-// Sağ ve sol kıyıda birkaç kamış.
-const REEDS = [
-  [34, 0], [48, 14], [61, 6], [1140, 10], [1156, 0], [1171, 16],
-]
-  .map(([x, lean]) => `<path d="M${x} ${H} Q${x + lean * 0.3} ${H - 30} ${x + lean * 0.6} ${H - 52}"/><ellipse cx="${x + lean * 0.6}" cy="${H - 58}" rx="2.6" ry="7"/>`)
-  .join('');
+/** Şehir silüeti: iki cami, Galata Kulesi ve aralarda bina blokları. */
+function skyline() {
+  const r = random(21);
+  const base = H - 26;
+  const parts = [];
+  const f = (n) => n.toFixed(1);
+  const rect = (x, top, w, bottom = base) => parts.push(`M${f(x)} ${f(top)}h${f(w)}V${f(bottom)}h${f(-w)}z`);
+  const dome = (cx, y, rad) => parts.push(`M${f(cx - rad)} ${f(y)}A${f(rad)} ${f(rad)} 0 0 1 ${f(cx + rad)} ${f(y)}z`);
+  const cone = (cx, y, w, h) => parts.push(`M${f(cx - w / 2)} ${f(y)}L${f(cx)} ${f(y - h)}L${f(cx + w / 2)} ${f(y)}z`);
+  const minaret = (cx, h) => {
+    const top = base - h;
+    rect(cx - 3.5, top, 7);
+    rect(cx - 5.5, top + h * 0.28, 11, top + h * 0.28 + 3);
+    cone(cx, top, 7, 22);
+  };
+  const mosque = (cx, s) => {
+    rect(cx - 86 * s, base - 34 * s, 172 * s);
+    rect(cx - 50 * s, base - 50 * s, 100 * s, base - 34 * s);
+    dome(cx - 50 * s, base - 34 * s, 30 * s);
+    dome(cx + 50 * s, base - 34 * s, 30 * s);
+    dome(cx, base - 50 * s, 46 * s);
+    rect(cx - 1, base - 50 * s - 46 * s - 10, 2, base - 50 * s - 40 * s);
+    for (const [dx, h] of [[-100, 122], [100, 122], [-78, 104], [78, 104]]) minaret(cx + dx * s, h * s);
+  };
+  const galata = (cx) => {
+    rect(cx - 15, base - 104, 30);
+    rect(cx - 19, base - 116, 38, base - 104);
+    cone(cx, base - 116, 40, 38);
+  };
+  const landmarks = [
+    { from: 170, to: 430, draw: () => mosque(300, 1) },
+    { from: 735, to: 785, draw: () => galata(760) },
+    { from: 950, to: 1090, draw: () => mosque(1020, 0.6) },
+  ];
+  let x = -10;
+  while (x < W + 10) {
+    const w = 18 + r() * 30;
+    if (!landmarks.some((l) => x + w > l.from && x < l.to)) rect(x, base - (12 + r() * 34), w - 2);
+    x += w;
+  }
+  for (const l of landmarks) l.draw();
+  return parts.join('');
+}
 
 const SCENE = `
   <svg class="gok-sahne" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false">
@@ -61,11 +98,10 @@ const SCENE = `
     </defs>
     <rect width="${W}" height="${H}" fill="url(#gok-renk)"/>
     <g class="yildizlar">${stars()}</g>
-    <path class="sirt-uzak" d="${ridgePath(3, { base: 158, hill: 14, bump: [40, 90], height: [6, 18] })}"/>
-    <path class="sirt-yakin" d="${ridgePath(11, { base: 182, hill: 9, bump: [26, 60], height: [10, 26] })}"/>
+    <path class="sirt-uzak" d="${ridgePath(3, { base: 168, hill: 10, bump: [60, 120], height: [4, 12] })}"/>
+    <path class="sehir" d="${skyline()}"/>
     <rect class="dere" y="${H - 26}" width="${W}" height="26"/>
     <path class="dere-isik" d="M0 ${H - 25} H${W}"/>
-    <g class="kamislar">${REEDS}</g>
   </svg>`;
 
 const FIREFLIES = Array.from({ length: 7 }, (_, i) => `<span class="ates-bocegi b${i}"></span>`).join('');

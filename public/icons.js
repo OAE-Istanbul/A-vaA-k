@@ -14,6 +14,9 @@ const PATHS = {
     '<path d="M8 13.5V4.5Q8 3 6.5 3M15 13.5V4.5Q15 3 13.5 3"/><path d="M8 6.8h7M8 10.2h7"/><path d="M3 16.5q2.25-1.6 4.5 0t4.5 0 4.5 0 4.5 0M3 20q2.25-1.6 4.5 0t4.5 0 4.5 0 4.5 0"/>',
   dere_manzarasi:
     '<path d="M6 20.5V10M9.6 20.5v-7.5"/><ellipse cx="6" cy="7.6" rx="1.1" ry="2.3"/><ellipse cx="9.6" cy="10.6" rx="1" ry="1.9"/><path d="M6 15.5q-2.6-.8-3.5-3.4"/><path d="M12 16q2-1.4 4 0t4 0M13.5 19.6q1.7-1.2 3.4 0t3.4 0"/>',
+  // Asma köprü ve altında su
+  bogaz_manzarasi:
+    '<path d="M7 16V5.5M17 16V5.5"/><path d="M2 12.5h20"/><path d="M7 5.5Q12 12.5 17 5.5M2 9q3-1 5-3.5M17 5.5q2 2.5 5 3.5"/><path d="M3 19.5q2-1.3 4 0t4 0 4 0 4 0"/>',
   deniz_manzarasi:
     '<path d="M2.5 14.5h19"/><path d="M8 14.5a4 4 0 0 1 8 0"/><path d="M12 6.8v1.6M6.6 9.2l1 1M17.4 9.2l-1 1"/><path d="M4 18.3q2-1.3 4 0t4 0 4 0 4 0"/>',
   ozel_bahce:
@@ -69,7 +72,13 @@ const PATHS = {
   // ---- Arayüz ----
   gemi: '<path d="M2.5 15.5h19l-3.2 4.2q-.5.8-1.5.8H7.2q-1 0-1.5-.8z"/><path d="M12 3.5v12M12 3.5l6.5 9.6H12M12 6.4 7 13.1h5"/>',
   yaprak: '<path class="f" d="M12 2.5c4.6 3.1 6.2 7.2 4.1 12.3-1 2.6-3 4.6-4.1 6.2-1.1-1.6-3.1-3.6-4.1-6.2C5.8 9.7 7.4 5.6 12 2.5z"/>',
+  // İstanbul lalesi
+  lale: '<path class="f" d="M6.5 4.5c1.6 1.4 3.3 1.8 5.5-.4 2.2 2.2 3.9 1.8 5.5.4.7 5.6-1.3 9-5.5 9.5-4.2-.5-6.2-3.9-5.5-9.5z"/><path d="M12 14v7M12 18.5c-1.8-.4-3-1.6-3.5-3.2"/>',
   tik: '<path d="M5 12.6l4.3 4.3L19 7.2"/>',
+  konum: '<path d="M12 21s-6.5-6.2-6.5-11.2a6.5 6.5 0 0 1 13 0C18.5 14.8 12 21 12 21z"/><circle cx="12" cy="9.8" r="2.3"/>',
+  // Şehir hatları vapuru
+  vapur:
+    '<path d="M2.5 14.5h19l-2.4 4q-.5.8-1.4.8H6.3q-.9 0-1.4-.8z"/><path d="M5.5 14.5V11h12v3.5"/><path d="M8 11V8.5h7V11"/><path d="M12.5 8.5V5h2.2v3.5"/><path d="M8 12.8h.1M11 12.8h.1M14 12.8h.1"/>',
   saat: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
   arti: '<path d="M12 6v12M6 12h12"/>',
   eksi: '<path d="M6 12h12"/>',
@@ -87,9 +96,10 @@ export function icon(name, extraClass = '') {
   return `<svg class="ik ${extraClass}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${paths}</svg>`;
 }
 
-/** Göksu ve Yeşilçay'ın birleşip denize aktığı iki dere: logo. */
+/** Boğaz'ın asma köprüsü: logo. */
 export const logo = `
   <svg class="logo" viewBox="0 0 44 26" aria-hidden="true" focusable="false">
-    <path class="logo-goksu" d="M2.5 4.5C13 4.5 15 13 25.5 13H41.5"/>
-    <path class="logo-yesilcay" d="M2.5 21.5C13 21.5 15 13 25.5 13"/>
+    <path class="logo-kule" d="M12 22V3M32 22V3"/>
+    <path class="logo-halat" d="M2 11Q8 8 12 3Q22 17 32 3Q36 8 42 11"/>
+    <path class="logo-tabliye" d="M2 17H42"/>
   </svg>`;

@@ -1,4 +1,4 @@
-// Tek dosyalık, sunucusuz önizleme üretir: dist/preview/agva-onizleme.html
+// Tek dosyalık, sunucusuz önizleme üretir: dist/preview/istanbul-onizleme.html
 // Pazar kodu tarayıcıda çalışır, rakip oteller bot olarak teklif verir.
 // --standalone: doğrudan tarayıcıda açılabilen tam HTML belgesi üretir.
 import { build } from 'esbuild';
@@ -44,6 +44,6 @@ const html = standalone
 
 const outDir = new URL('dist/preview/', root);
 mkdirSync(outDir, { recursive: true });
-const file = new URL(standalone ? 'agva-onizleme-tam.html' : 'agva-onizleme.html', outDir);
+const file = new URL(standalone ? 'istanbul-onizleme-tam.html' : 'istanbul-onizleme.html', outDir);
 writeFileSync(file, html);
 console.log(`Önizleme yazıldı: ${fileURLToPath(file)} (${Math.round(html.length / 1024)} KB)`);

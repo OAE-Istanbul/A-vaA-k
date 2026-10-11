@@ -13,6 +13,7 @@ export const AMENITIES = Object.freeze({
   somine: 'Şömine',
   havuz: 'Havuz',
   dere_manzarasi: 'Dere manzarası',
+  bogaz_manzarasi: 'Boğaz manzarası',
   deniz_manzarasi: 'Deniz manzarası',
   ozel_bahce: 'Özel bahçe',
   mangal: 'Mangal',
@@ -35,4 +36,24 @@ export const BEST_CATEGORIES = Object.freeze({
   price: 'En iyi fiyat',
   amenities: 'En çok olanak',
   value: 'Fiyat/performans',
+});
+
+// İstanbul'un bölgeleri. Alıcı bir ya da birkaç bölge seçer; seçmezse tüm İstanbul.
+export const REGIONS = Object.freeze({
+  fatih: 'Sultanahmet ve Fatih',
+  beyoglu: 'Beyoğlu ve Galata',
+  besiktas: 'Beşiktaş ve Ortaköy',
+  sisli: 'Şişli ve Nişantaşı',
+  sariyer: 'Sarıyer',
+  kadikoy: 'Kadıköy ve Moda',
+  uskudar: 'Üsküdar',
+  beykoz: 'Beykoz',
+  adalar: 'Adalar',
+  sile: 'Şile ve Ağva',
+});
+
+export const REGION_SIDES = Object.freeze({
+  avrupa: { label: 'Avrupa Yakası', regions: ['fatih', 'beyoglu', 'besiktas', 'sisli', 'sariyer'] },
+  asya: { label: 'Anadolu Yakası', regions: ['kadikoy', 'uskudar', 'beykoz', 'sile'] },
+  adalar: { label: 'Adalar', regions: ['adalar'] },
 });

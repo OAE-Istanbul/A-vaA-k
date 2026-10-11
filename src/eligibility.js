@@ -1,4 +1,4 @@
-import { AMENITIES, GUEST_GROUPS, HOTEL_TYPES } from './catalog.js';
+import { AMENITIES, GUEST_GROUPS, HOTEL_TYPES, REGIONS } from './catalog.js';
 
 export const guestCount = (listing) => listing.adults + listing.children;
 
@@ -12,11 +12,15 @@ export const suitableRooms = (hotel, listing) =>
   );
 
 /**
- * Bir otel ilana teklif verebilir mi? Alıcının otel tipi ve olanak tercihleri,
+ * Bir otel ilana teklif verebilir mi? Alıcının bölge, otel tipi ve olanak tercihleri,
  * otelin kabul ettiği misafir profilleri, oda sayısı ve kapasitesi birlikte sağlanmalı.
  */
 export function checkEligibility(hotel, listing) {
   const reasons = [];
+  const regions = listing.regions ?? [];
+  if (regions.length > 0 && !regions.includes(hotel.region)) {
+    reasons.push(`Alıcı ${regions.map((r) => REGIONS[r]).join(', ')} bölgesinde kalmak istiyor.`);
+  }
   if (listing.hotelTypes.length > 0 && !listing.hotelTypes.includes(hotel.type)) {
     reasons.push(`Alıcı ${listing.hotelTypes.map((t) => HOTEL_TYPES[t]).join(', ')} arıyor.`);
   }

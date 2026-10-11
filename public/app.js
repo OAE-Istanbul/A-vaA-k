@@ -1,6 +1,6 @@
 import { bump, flyTo, launchBoat, leafBurst, pressRipple, springIn } from './fx.js';
+import { mountBosphorus } from './bogaz.js';
 import { icon, logo } from './icons.js';
-import { mountRiver } from './river.js';
 import { renderSky, updateSky } from './scenery.js';
 
 const LIVE = new Set(['open', 'awaiting_choice']);
@@ -84,7 +84,7 @@ function bestPhrase(categories) {
 
 // ---- Kişi ve oda figürleri ----
 
-/** Misafirleri odalara dağıtılmış figürlerle gösterir: her oda bir dere taşı. */
+/** Misafirleri odalara dağıtılmış figürlerle gösterir: her oda ayrı bir kutu. */
 function guestIcons({ adults, children, roomCount = 1 }, { size = '', fresh = -1 } = {}) {
   const rooms = Array.from({ length: roomCount }, () => []);
   for (let i = 0; i < adults; i++) rooms[i % roomCount].push(['yetiskin', i]);
@@ -313,7 +313,7 @@ function tick() {
       expired = true;
     }
   }
-  // Dereyi geçen sandal: ilan açılışından teklif bitişine.
+  // Karşıya geçen vapur: ilan açılışından teklif bitişine.
   for (const el of document.querySelectorAll('[data-crossing-from]')) {
     const from = Number(el.dataset.crossingFrom);
     const to = Number(el.dataset.crossingTo);
@@ -373,11 +373,14 @@ function syncSteppers(root) {
 }
 
 function requestList(listing, { compact = false } = {}) {
+  const regions = listing.regions?.length
+    ? listing.regions.map((r) => `<li class="bolge">${icon('konum')}${esc(label('regions', r))}</li>`)
+    : [`<li class="bolge">${icon('konum')}Tüm İstanbul</li>`];
   const types = listing.hotelTypes.length
     ? listing.hotelTypes.map((t) => `<li>${icon(t)}${esc(label('hotelTypes', t))}</li>`)
     : [`<li class="soluk">Her tür konaklama</li>`];
   const amenities = listing.amenities.map((a) => `<li class="istenen">${icon(a)}${esc(label('amenities', a))}</li>`);
-  return `<ul class="istekler ${compact ? 'kucuk' : ''}">${[...types, ...amenities].join('')}</ul>`;
+  return `<ul class="istekler ${compact ? 'kucuk' : ''}">${[...regions, ...types, ...amenities].join('')}</ul>`;
 }
 
 function crossing(from, to, caption) {
@@ -385,7 +388,7 @@ function crossing(from, to, caption) {
     <div class="gecis" data-crossing-from="${from}" data-crossing-to="${to}">
       <div class="gecis-dere" aria-hidden="true">
         <svg viewBox="0 0 300 20" preserveAspectRatio="none"><path d="M0 10 Q12.5 3 25 10 T50 10 T75 10 T100 10 T125 10 T150 10 T175 10 T200 10 T225 10 T250 10 T275 10 T300 10"/></svg>
-        <span class="sandal">${icon('sandal')}</span>
+        <span class="sandal">${icon('vapur')}</span>
       </div>
       <p class="gecis-yazi">${caption}</p>
     </div>`;
@@ -423,19 +426,19 @@ function landingView() {
   return `
     <div class="kiyilar giris">
       <div class="kiyi sol">
-        <p class="ust-baslik">Şile · Ağva</p>
-        <h1 class="dev">Bu gece Ağva'da kalın. Fiyatı oteller kırsın.</h1>
-        <p class="giris-ozet">Göksu ile Yeşilçay'ın denize kavuştuğu yerde bu gece boş kalacak odalar var.
-        Ne istediğinizi yazın; size uyan oteller birbirinin fiyatını kırarak teklif versin.</p>
+        <p class="ust-baslik">${icon('konum')}Tüm İstanbul · Adalar'dan Ağva'ya</p>
+        <h1 class="dev">Bu gece İstanbul'da kalın. Fiyatı oteller kırsın.</h1>
+        <p class="giris-ozet">Şehrin dört bir yanında bu gece boş kalacak odalar var.
+        Bölgenizi, kaç kişi olduğunuzu ve neler istediğinizi yazın; size uyan oteller birbirinin fiyatını kırarak teklif versin.</p>
         <ol class="adimlar">
-          <li><span>${icon('gemi')}</span><div><b>İlanınızı dereye bırakın</b>Kaç kişisiniz, ne zaman varırsınız, neler olmazsa olmaz?</div></li>
+          <li><span>${icon('vapur')}</span><div><b>İlanınızı Boğaz'a bırakın</b>Hangi semtte, kaç kişi, ne zaman varırsınız, neler olmazsa olmaz?</div></li>
           <li><span>${icon('price')}</span><div><b>Oteller fiyat kırsın</b>Yalnızca size uyan oteller görür. Her yeni teklif en az ${tl(rules.minDecrementTL)} daha ucuz.</div></li>
           <li><span>${icon('value')}</span><div><b>En iyisini seçin</b>En iyi fiyat, en çok olanak, fiyat/performans. ${rules.acceptGraceMinutes} dakikada seçmezseniz en iyi fiyat sizin.</div></li>
         </ol>
       </div>
       <div class="kiyi sag kapilar">
         <form class="tas kapi" data-key="buyer-login">
-          <h2>${icon('sandal')}Kalacak yer arıyorum</h2>
+          <h2>${icon('konum')}Kalacak yer arıyorum</h2>
           <label class="alan">Adınız <input name="name" required maxlength="60" autocomplete="given-name"></label>
           <label class="alan">Cep telefonunuz <input name="phone" required inputmode="tel" placeholder="05XX XXX XX XX" autocomplete="tel"></label>
           <button class="dugme ana">Devam edin</button>
@@ -475,6 +478,13 @@ function newListingForm() {
     .join('');
   const types = Object.entries(catalog.hotelTypes).map(([k, v]) => chip('hotelTypes', k, v, { cls: 'buyuk' })).join('');
   const amenities = Object.entries(catalog.amenities).map(([k, v]) => chip('amenities', k, v)).join('');
+  const sides = Object.values(catalog.regionSides)
+    .map((side) => `
+      <div class="yaka">
+        <p class="yaka-ad">${esc(side.label)}</p>
+        <div class="secimler">${side.regions.map((r) => chip('regions', r, catalog.regions[r], { iconName: 'konum' })).join('')}</div>
+      </div>`)
+    .join('');
   const durations = rules.auctionDurations
     .map((d) => `<label class="secim yalin"><input type="radio" name="durationMinutes" value="${d}"${d === 30 ? ' checked' : ''}><span><b>${d} dk</b></span></label>`)
     .join('');
@@ -494,6 +504,10 @@ function newListingForm() {
             ${stepper('children', 'cocuk', 'Çocuk', 0, 0, 6)}
             ${stepper('roomCount', 'kapi', 'Oda', 1, 1, rules.maxRooms)}
           </div>
+        </fieldset>
+        <fieldset class="tas">
+          <legend>Nerede? <span>Birden fazla semt seçebilirsiniz; boş bırakırsanız tüm İstanbul</span></legend>
+          <div class="yakalar">${sides}</div>
         </fieldset>
         <fieldset class="tas">
           <legend>Ne zaman?</legend>
@@ -521,7 +535,7 @@ function newListingForm() {
       </form>
       <aside class="kiyi sag taslak-kiyi">
         <div class="taslak tas koyu" id="taslak"></div>
-        <button class="dugme ana iri gemi-dugme" form="ilan-formu">${icon('gemi')}İlanı dereye bırakın</button>
+        <button class="dugme ana iri gemi-dugme" form="ilan-formu">${icon('vapur')}İlanı Boğaz'a bırakın</button>
       </aside>
     </div>`;
 }
@@ -540,6 +554,7 @@ function syncDraft() {
     roomCount: Number(fd.get('roomCount')),
     nights: Number(fd.get('nights')),
     arrivalTime: fd.get('arrivalTime') || '22:30',
+    regions: fd.getAll('regions'),
     hotelTypes: fd.getAll('hotelTypes'),
     amenities: fd.getAll('amenities'),
     maxBudget: fd.get('maxBudget') ? Number(fd.get('maxBudget')) : null,
@@ -649,7 +664,7 @@ function offerCard(listing, offer, canAccept) {
       <div class="teklif-govde">
         <div class="teklif-bilgi">
           <h3>${esc(offer.hotel.name)}</h3>
-          <p class="tip">${icon(offer.hotel.type)}${esc(label('hotelTypes', offer.hotel.type))} · ${esc(offer.roomName)}${listing.roomCount > 1 ? ` × ${listing.roomCount}` : ''}</p>
+          <p class="tip">${icon('konum')}${esc(label('regions', offer.hotel.region))} · ${icon(offer.hotel.type)}${esc(label('hotelTypes', offer.hotel.type))} · ${esc(offer.roomName)}${listing.roomCount > 1 ? ` × ${listing.roomCount}` : ''}</p>
           ${offer.note ? `<p class="otel-notu">${icon('fener')}<span>${esc(offer.note)}</span></p>` : ''}
           <ul class="olanaklar">${amenities}</ul>
         </div>
@@ -670,7 +685,7 @@ function acceptedBlock(l) {
       <span class="anlasma-tik">${icon('tik')}</span>
       <p class="ust-baslik">${l.autoAccepted ? 'Süre dolduğu için en iyi fiyat seçildi' : 'Anlaştınız'}</p>
       <h2>${esc(a.hotel.name)}</h2>
-      <p class="tip">${icon(a.hotel.type)}${esc(label('hotelTypes', a.hotel.type))} · ${esc(a.roomName)}${l.roomCount > 1 ? ` × ${l.roomCount}` : ''}</p>
+      <p class="tip">${icon('konum')}${esc(label('regions', a.hotel.region))} · ${icon(a.hotel.type)}${esc(label('hotelTypes', a.hotel.type))} · ${esc(a.roomName)}${l.roomCount > 1 ? ` × ${l.roomCount}` : ''}</p>
       <p class="fiyat">${tl(a.price)}</p>
       <dl class="iletisim">
         <div><dt>Telefon</dt><dd><a href="tel:${esc(a.contact.phone.replace(/\s/g, ''))}">${esc(a.contact.phone)}</a></dd></div>
@@ -711,7 +726,7 @@ function hotelView({ hotel, live, won }) {
     <div class="kiyilar">
       <aside class="kiyi sol">
         <div class="tas koyu otel-kimlik">
-          <p class="ust-baslik">${icon(hotel.type)}${esc(label('hotelTypes', hotel.type))}</p>
+          <p class="ust-baslik">${icon('konum')}${esc(label('regions', hotel.region))} · ${esc(label('hotelTypes', hotel.type))}</p>
           <h1>${esc(hotel.name)}</h1>
           <p class="kabul">${hotel.acceptedGroups.map((g) => `<span title="${esc(label('guestGroups', g))}">${icon(g)}</span>`).join('')}</p>
           <ul class="olanaklar">${hotel.amenities.map((a) => `<li>${icon(a)}<span>${esc(label('amenities', a))}</span></li>`).join('')}</ul>
@@ -831,6 +846,7 @@ const submitHandlers = {
         roomCount: Number(fd.get('roomCount')),
         nights: Number(fd.get('nights')),
         arrivalTime: fd.get('arrivalTime'),
+        regions: fd.getAll('regions'),
         hotelTypes: fd.getAll('hotelTypes'),
         amenities: fd.getAll('amenities'),
         maxBudget: fd.get('maxBudget') ? Number(fd.get('maxBudget')) : null,
@@ -838,9 +854,9 @@ const submitHandlers = {
         note: fd.get('note'),
       },
     });
-    toast('İlanınız dereye bırakıldı. Uygun oteller teklif vermeye başlayabilir.', 'success');
+    toast('İlanınız yayında. Uygun oteller teklif vermeye başlayabilir.', 'success');
     state.draftGuests = null;
-    return () => from && launchBoat(from, icon('gemi'));
+    return () => from && launchBoat(from, icon('vapur'));
   },
   offer: async (form, fd, button) => {
     const from = button?.getBoundingClientRect();
@@ -877,7 +893,7 @@ const clickHandlers = {
     await api(`/api/listings/${encodeURIComponent(listing)}/accept`, { method: 'POST', body: { offerId: offer } });
     state.pending = null;
     toast('Anlaştınız. İyi tatiller!', 'success');
-    return () => leafBurst(from, icon('yaprak'));
+    return () => leafBurst(from, icon('lale'));
   },
   'confirm-cancel': async (button) => {
     await api(`/api/listings/${encodeURIComponent(button.dataset.listing)}/cancel`, { method: 'POST' });
@@ -953,8 +969,8 @@ window.addEventListener('agva:session', (event) => {
 });
 
 async function init() {
-  $('#marka').innerHTML = `${logo}<span class="marka-ad">Ağva</span>`;
-  mountRiver($('#akis'));
+  $('#marka').innerHTML = `${logo}<span class="marka-ad">İstanbul</span><span class="marka-alt">gece pazarı</span>`;
+  mountBosphorus($('#akis'));
   try {
     state.meta = await api('/api/meta');
   } catch (err) {

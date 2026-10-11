@@ -1,4 +1,4 @@
-import { AMENITIES, BEST_CATEGORIES, GUEST_GROUPS, HOTEL_TYPES } from './catalog.js';
+import { AMENITIES, BEST_CATEGORIES, GUEST_GROUPS, HOTEL_TYPES, REGION_SIDES, REGIONS } from './catalog.js';
 import { MarketError } from './errors.js';
 
 function route(method, pattern, handler, role = null) {
@@ -13,7 +13,14 @@ function route(method, pattern, handler, role = null) {
 export function createApi({ market, auth, config }) {
   const meta = {
     appName: config.appName,
-    catalog: { hotelTypes: HOTEL_TYPES, amenities: AMENITIES, guestGroups: GUEST_GROUPS, bestCategories: BEST_CATEGORIES },
+    catalog: {
+      hotelTypes: HOTEL_TYPES,
+      amenities: AMENITIES,
+      guestGroups: GUEST_GROUPS,
+      bestCategories: BEST_CATEGORIES,
+      regions: REGIONS,
+      regionSides: REGION_SIDES,
+    },
     rules: {
       marketOpens: config.marketOpens,
       marketCloses: config.marketCloses,

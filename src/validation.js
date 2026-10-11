@@ -1,4 +1,4 @@
-import { AMENITIES, GUEST_GROUPS, HOTEL_TYPES } from './catalog.js';
+import { AMENITIES, GUEST_GROUPS, HOTEL_TYPES, REGIONS } from './catalog.js';
 import { MarketError } from './errors.js';
 
 function integer(value, label, min, max) {
@@ -91,6 +91,7 @@ export function validateListingInput(input, config) {
     roomCount,
     nights: integer(input.nights ?? 1, 'Gece sayısı', 1, config.maxNights),
     arrivalTime: clockTime(input.arrivalTime, 'Varış saati'),
+    regions: subsetOf(input.regions, REGIONS, 'bölge'),
     hotelTypes: subsetOf(input.hotelTypes, HOTEL_TYPES, 'otel tipi'),
     amenities: subsetOf(input.amenities, AMENITIES, 'olanak'),
     maxBudget: noBudget ? null : integer(input.maxBudget, 'Bütçe üst sınırı', 1, 1_000_000),
